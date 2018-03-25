@@ -1,0 +1,29 @@
+{% for patient in patients %}
+<tr>
+    <td style="font-size: 2rem;"><a href="{% url 'web_med:patient_detail' patient.id patient.slug %}">{{ patient.firstName }}</a></td>
+    <td style="font-size: 2rem;"><a href="{% url 'web_med:patient_detail' patient.id patient.slug %}">{{ patient.lastName }}</a></td>
+    <td style="font-size: 2rem;"><a href="{% url 'web_med:patient_detail' patient.id patient.slug %}">{{ patient.description }}</a></td>
+
+    <td>
+        <!-- Update Patient -->
+        <button type="button" class="btn btn-warning btn-sm js-update-patient" data-url="{% url 'web_med:patient-update' patient.id patient.slug %}">
+            <span class="glyphicon glyphicon-pencil"></span> Edit
+        </button>
+    </td>
+    <td>
+        <!-- Delete Patient -->
+        <button type="button" class="btn btn-danger btn-sm js-delete-patient" data-url="{% url 'web_med:patient-delete' patient.id patient.slug %}">
+            <span class="glyphicon glyphicon-trash"></span> Delete
+        </button>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="8" class="text-center bg-warning">No Patients</td>
+</tr>
+{% endfor %}
+<style>
+    a {
+        color: inherit;
+    }
+</style>

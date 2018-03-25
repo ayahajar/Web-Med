@@ -1,0 +1,79 @@
+{% extends 'web_med/base.html' %} {% block title %}Patient Details{% endblock %} {% block content %}
+<p>
+    <h1>Patient: {{patient.firstName}}{{ " " }}{{ patient.lastName }}</h1>
+</p>
+
+<ul class="nav nav-tabs" style="padding-top: 30px">
+    <li class="active"><a style="font-size: 2rem;" data-toggle="tab" href="#home">Upload DICOM files</a></li>
+    <li><a style="font-size: 2rem;" data-toggle="tab" href="#menu1">Upload nii files</a></li>
+    <li><a style="font-size: 2rem;" data-toggle="tab" href="#menu2">Upload VTK files</a></li>
+</ul>
+
+<div class="tab-content">
+    <div id="home" class="tab-pane fade in active">
+
+        <form method="post" action="{% url 'web_med:clear_files' patient.id patient.slug %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" class="btn btn-danger pull-right">
+            <span class="glyphicon glyphicon-trash"></span> Clear All Dicom Files
+        </button>
+        </form>
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="panel panel-primary">
+                    <a style="font-size: 1.6rem;" href="{% url 'web_med:drag_and_drop_upload' patient.id patient.slug %}" class="list-group-item{% if request.path == '/web_med/drag-and-drop-upload/' %} active{% endif %}">Drag and Drop Upload</a>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="panel panel-primary">
+                    <a style="font-size: 1.6rem;" href="{% url 'web_med:progress_bar_upload' patient.id patient.slug %}" class="list-group-item{% if request.path == '/web_med/progress-bar-upload/' %} active{% endif %}">Progress Bar Upload</a>
+                </div>
+            </div>
+
+        </div>
+        {% block photos_contentsss %} {% endblock %}
+
+    </div>
+
+    <div id="menu1" class="tab-pane fade">
+        <form method="post" action="{% url 'web_med:clear_files_nii' patient.id patient.slug %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" class="btn btn-danger pull-right">
+                <span class="glyphicon glyphicon-trash"></span> Clear All Nii Files
+            </button>
+        </form>
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="panel panel-primary">
+                    <a style="font-size: 1.6rem;" href="{% url 'web_med:drag_and_drop_upload_nii' patient.id patient.slug %}" class="list-group-item{% if request.path == '/web_med/drag-and-drop-upload/' %} active{% endif %}">Drag and Drop Upload</a>
+                </div>
+            </div>
+        </div>
+        {% block photos_contentsss_nii %} {% endblock %}
+    </div>
+
+    <div id="menu2" class="tab-pane fade">
+        <form method="post" action="{% url 'web_med:clear_files_vtk' patient.id patient.slug %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" class="btn btn-danger pull-right">
+                <span class="glyphicon glyphicon-trash"></span> Clear All VTK Files
+            </button>
+        </form>
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="panel panel-primary">
+                    <a style="font-size: 1.6rem;" href="{% url 'web_med:drag_and_drop_upload_vtk' patient.id patient.slug %}" class="list-group-item{% if request.path == '/web_med/drag-and-drop-upload/' %} active{% endif %}">Drag and Drop Upload</a>
+                </div>
+            </div>
+        </div>
+        {% block photos_contentsss_vtk %} {% endblock %}
+    </div>
+</div>
+
+{% endblock %}

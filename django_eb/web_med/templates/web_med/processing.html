@@ -1,0 +1,2819 @@
+{% extends 'web_med/base.html' %} {% load staticfiles %} {% block title %}Image Processing{% endblock %} {% block javascript %}
+<script src="{% static 'web_med/js/hammer.min.js' %}"></script>
+<script src="{% static 'web_med/js/cornerstone.js' %}"></script>
+<script src="{% static 'web_med/js/cornerstoneMath.js' %}"></script>
+<script src="{% static 'web_med/js/cornerstoneTools.js' %}"></script>
+<script src="{% static 'web_med/js/dicomParser.js' %}"></script>
+<script src="{% static 'web_med/js/dialogPolyfill.js' %}"></script>
+
+<script src="{% static 'web_med/js/cornerstoneWADOImageLoader.js' %}"></script>
+<script src="{% static 'web_med/js/cornerstoneWebImageLoader.js' %}"></script>
+<script src="{% static 'web_med/js/cornerstoneWADOImageLoaderCodecs.js' %}"></script>
+<script src="{% static 'web_med/js/cornerstoneWADOImageLoaderWebWorker.js' %}"></script>
+
+<script src="{% static 'web_med/js/exampleImageIdLoader.js' %}"></script>
+<script src="{% static 'web_med/js/exampleMetaDataProvider.js' %}"></script>
+
+<script src="{{ media_url }}test.js" type="text/javascript"></script>
+<!--
+<script language="javascript">
+    var MEDIA_URL = "{{ MEDIA_URL }}";
+</script>
+-->
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.19.0.min.js"></script>
+<!--
+<script>
+    AWS.config.update({
+        accessKeyId: 'AKIAIKKE2KHD2LLKXHYQ',
+        secretAccessKey: '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'
+    });
+    var s3BucketName = 'mywebmedbucket';
+    var s3RegionName = 'us-east-1';
+</script>
+-->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"> {% endblock %} {% block content %}
+<link type="text/css" rel="stylesheet" href="{% static 'web_med/cornerstone.css' %}">
+<link type="text/css" rel="stylesheet" href="{% static 'web_med/dialogPolyfill.css' %}">
+
+<div class="title" style="position: static; padding-bottom:50px">
+    <h1 style="color:black; text-align:justify; display: inline-block">Image Processing | </h1>
+    <h4 style="display: inline-block; margin-left:10px">
+        <a href="{% url 'web_med:progress_bar_upload' pi ps %}">Uploaded Images</a>
+    </h4>
+</div>
+
+<!-- Cornerstone -->
+
+<div class="btn-toolbar" style="position:fixed;right:300px;top:240px">
+    <div class="btn-group-vertical">
+
+        <button type="button" id="OriginalImage" class="btn enjoy-css" style="font-size:16px">Original</button>
+
+        <button id="clearToolData" type="button" class="btn enjoy-css"><i class="fa fa-eraser" style="font-size:20px"></i><br><br>Clear All</button>
+
+        <button id="enableWindowLevelTool" type="button" class="btn enjoy-css"><i class="material-icons" style="font-size:25px">brightness_5</i><br><br>WW/WC</button>
+
+        <div class="btn-group">
+            <button type="button" class="btn enjoy-css dropdown-toggle" data-toggle="dropdown"><i class="material-icons" style="font-size:35px">navigate_before</i><br><span class="caret"></span>&nbsp;&nbsp;Angle</button>
+            <ul class="dropdown-menu" role="menu">
+                <div class="btn-group-vertical">
+                    <button type="button" id="angle" class="btn enjoy-css2">Measure</button>
+                    <button type="button" id="showAngle" class="btn enjoy-css2">Show</button>
+                    <button type="button" id="hideAngle" class="btn enjoy-css2">Hide</button>
+                    <button type="button" id="clearAngle" class="btn enjoy-css2">Clear</button>
+                </div>
+            </ul>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn enjoy-css dropdown-toggle" data-toggle="dropdown"><i class="fa fa-window-minimize" style="font-size:20px"></i><br><br><span class="caret"></span>&nbsp;&nbsp;Length</button>
+            <ul class="dropdown-menu" role="menu">
+                <div class="btn-group-vertical">
+                    <button type="button" id="enableLength" class="btn enjoy-css2">Measure</button>
+                    <button type="button" id="showLength" class="btn enjoy-css2">Show</button>
+                    <button type="button" id="hideLength" class="btn enjoy-css2">Hide</button>
+                    <button type="button" id="clearLengthData" class="btn enjoy-css2">Clear</button>
+                </div>
+            </ul>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn enjoy-css dropdown-toggle" data-toggle="dropdown"><i class="material-icons">call_received</i><br><br><span class="caret"></span>&nbsp;&nbsp;Annotation</button>
+            <ul class="dropdown-menu" role="menu">
+                <div class="btn-group-vertical">
+                    <button type="button" id="annotate" class="btn enjoy-css2">Measure</button>
+                    <button type="button" id="showAnnotate" class="btn enjoy-css2">Show</button>
+                    <button type="button" id="hideAnnotate" class="btn enjoy-css2">Hide</button>
+                    <button type="button" id="clearAnnotate" class="btn enjoy-css2">Clear</button>
+                </div>
+            </ul>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn enjoy-css dropdown-toggle" data-toggle="dropdown"><i class="material-icons" style="font-size:20px">font_download</i><br><br><span class="caret"></span>&nbsp;&nbsp;Seed</button>
+            <ul class="dropdown-menu" role="menu">
+                <div class="btn-group-vertical">
+                    <button type="button" id="seed" class="btn enjoy-css2">Measure</button>
+                    <button type="button" id="showSeed" class="btn enjoy-css2">Show</button>
+                    <button type="button" id="hideSeed" class="btn enjoy-css2">Hide</button>
+                    <button type="button" id="clearLabels" class="btn enjoy-css2">Clear</button>
+                    <li>
+                        <label style="color: black">With Coordinates
+                            <input type="checkbox" id="check-coords" checked>
+                        </label>
+                    </li>
+                    <li>
+                        <label style="color: black">Count up
+                            <input type="checkbox" id="check-countUp" checked>
+                        </label>
+                    </li>
+                    <li>
+                        <label style="color: black">Begin with:
+                            <input type="text" id="f-letter" value="A" maxlength="1" size="1" style="text-transform:uppercase">
+                            <input type="number" id="f-number" value="1" style="width: 3em">
+                        </label>
+                    </li>
+                </div>
+            </ul>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn enjoy-css dropdown-toggle" data-toggle="dropdown"><i class="material-icons" style="font-size:20px">radio_button_checked</i><br><br><span class="caret"></span>&nbsp;&nbsp;Probe</button>
+            <ul class="dropdown-menu" role="menu">
+                <div class="btn-group-vertical">
+                    <button type="button" id="probe" class="btn enjoy-css2">Measure</button>
+                    <button type="button" id="showProbe" class="btn enjoy-css2">Show</button>
+                    <button type="button" id="hideProbe" class="btn enjoy-css2">Hide</button>
+                    <button type="button" id="clearProbe" class="btn enjoy-css2">Clear</button>
+                </div>
+            </ul>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn enjoy-css dropdown-toggle" data-toggle="dropdown"><i class="material-icons" style="font-size:20px">share</i><br><br><span class="caret"></span>&nbsp;&nbsp;Freeform</button>
+            <ul class="dropdown-menu" role="menu">
+                <div class="btn-group-vertical">
+                    <button type="button" id="freehand" class="btn enjoy-css2">Measure</button>
+                    <button type="button" id="showFreeform" class="btn enjoy-css2">Show</button>
+                    <button type="button" id="hideFreeform" class="btn enjoy-css2">Hide</button>
+                    <button type="button" id="clearFreeform" class="btn enjoy-css2">Clear</button>
+                </div>
+            </ul>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn enjoy-css dropdown-toggle" data-toggle="dropdown"><i class="material-icons">radio_button_unchecked</i><br><br><span class="caret"></span>&nbsp;&nbsp;Elliptical</button>
+            <ul class="dropdown-menu" role="menu">
+                <div class="btn-group-vertical">
+                    <button type="button" id="circleroi" class="btn enjoy-css2">Measure</button>
+                    <button type="button" id="showCircleroi" class="btn enjoy-css2">Show</button>
+                    <button type="button" id="hideCircleroi" class="btn enjoy-css2">Hide</button>
+                    <button type="button" id="clearCircleroi" class="btn enjoy-css2">Clear</button>
+                </div>
+            </ul>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn enjoy-css dropdown-toggle" data-toggle="dropdown"><i class="material-icons">crop_landscape</i><br><br><span class="caret"></span>&nbsp;&nbsp;Rectangle</button>
+            <ul class="dropdown-menu" role="menu">
+                <div class="btn-group-vertical">
+                    <button type="button" id="rectangleroi" class="btn enjoy-css2">Measure</button>
+                    <button type="button" id="showRectangle" class="btn enjoy-css2">Show</button>
+                    <button type="button" id="hideRectangle" class="btn enjoy-css2">Hide</button>
+                    <button type="button" id="clearRectangle" class="btn enjoy-css2">Clear</button>
+                </div>
+            </ul>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn enjoy-css dropdown-toggle" data-toggle="dropdown"><i class="material-icons" style="font-size:20px">select_all</i><br><br><span class="caret"></span>&nbsp;&nbsp;Highlight</button>
+            <ul class="dropdown-menu" role="menu">
+                <div class="btn-group-vertical">
+                    <button type="button" id="highlight" class="btn enjoy-css2">Measure</button>
+                    <button type="button" id="showhighlight" class="btn enjoy-css2">Show</button>
+                    <button type="button" id="hidehighlight" class="btn enjoy-css2">Hide</button>
+                    <button type="button" id="clearhighlight" class="btn enjoy-css2">Clear</button>
+                </div>
+            </ul>
+        </div>
+    </div>
+
+    <div class="btn-group-vertical">
+        <button type="button" id="ProcessedImage" class="btn enjoy-css" style="font-size:16px">Processed</button>
+        <button id="reset" type="button" class="btn enjoy-css"><i class="fa fa-refresh" style="font-size:20px"></i><br><br>Reset</button>
+        <button id="disableAll" type="button" class="btn enjoy-css"><i class="fa fa-mouse-pointer" style="font-size:20px"></i><br><br>Disable All</button>
+        <button id="invert" type="button" class="btn enjoy-css"><i class="fa fa-adjust" style="font-size:20px"></i><br><br>Invert</button>
+        <button id="pan" type="button" class="btn enjoy-css"><i class="fa fa-arrows" style="font-size:20px"></i><br><br>Pan</button>
+        <button id="zoom" type="button" class="btn enjoy-css"><i class="material-icons">search</i><br><br>Zoom</button>
+        <button id="zoomIn" type="button" class="btn enjoy-css"><i class="material-icons">zoom_in</i><br><br>Zoom In</button>
+        <button id="zoomOut" type="button" class="btn enjoy-css"><i class="material-icons">zoom_out</i><br><br>Zoom Out</button>
+        <button id="hFlip" type="button" class="btn enjoy-css"><i class="fa fa-arrows-h" style="font-size:20px"></i><br><br>H-Flip</button>
+        <button id="vFlip" type="button" class="btn enjoy-css"><i class="fa fa-arrows-v" style="font-size:20px"></i><br><br>V-Flip</button>
+        <button id="lRotate" type="button" class="btn enjoy-css"><i class="material-icons">undo</i><br><br>Rotate Left</button>
+        <button id="rRotate" type="button" class="btn enjoy-css"><i class="material-icons">redo</i><br><br>Rotate Right</button>
+    </div>
+</div>
+
+<!-- Modals -->
+
+<div class="modal fade" id="Mean" tabindex="-1" role="dialog" aria-labelledby="Mean Filter" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Mean Filter</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="radius_mean">Radius:&nbsp;</label>
+                    <input type="text" id="radius_mean" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="mean()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="Median" tabindex="-1" role="dialog" aria-labelledby="Median" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Median Filter</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="radius_median">Radius:&nbsp;</label>
+                    <input type="text" id="radius_median" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="median()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="BinomialBlur" tabindex="-1" role="dialog" aria-labelledby="BinomialBlur" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Binomial Blur Filter</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="numberOfRepetitions_BinomialBlur">Number Of Repetitions:&nbsp;</label>
+                    <input type="text" id="numberOfRepetitions_BinomialBlur" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="BinomialBlur()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="RecursiveGaussian" tabindex="-1" role="dialog" aria-labelledby="RecursiveGaussian" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Recursive Gaussian Filter</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="sigma_RecursiveGaussian">Sigma:&nbsp;</label>
+                    <input type="text" id="sigma_RecursiveGaussian" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="RecursiveGaussian()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="CurvatureAnisotropicDiffusion" tabindex="-1" role="dialog" aria-labelledby="CurvatureAnisotropicDiffusion" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Curvature Anisotropic Diffusion Filter</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="numberOfIterations_CurvatureAnisotropicDiffusion">Number Of Iterations:&nbsp;</label>
+                    <input type="text" id="numberOfIterations_CurvatureAnisotropicDiffusion" size="10">
+                    <br><br>
+                    <label for="timeStep_CurvatureAnisotropicDiffusion">Time Step:&nbsp;</label>
+                    <input type="text" id="timeStep_CurvatureAnisotropicDiffusion" size="10">
+                    <br><br>
+                    <label for="conductance_CurvatureAnisotropicDiffusion">Conductance:&nbsp;</label>
+                    <input type="text" id="conductance_CurvatureAnisotropicDiffusion" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="CurvatureAnisotropicDiffusion()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="CurvatureFlow" tabindex="-1" role="dialog" aria-labelledby="CurvatureFlow" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Curvature Flow Filter</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="numberOfIterations_CurvatureFlow">Number Of Iterations:&nbsp;</label>
+                    <input type="text" id="numberOfIterations_CurvatureFlow" size="10">
+                    <br><br>
+                    <label for="timeStep_CurvatureFlow">Time Step:&nbsp;</label>
+                    <input type="text" id="timeStep_CurvatureFlow" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="CurvatureFlow()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="GradientAnisotropicDiffusion" tabindex="-1" role="dialog" aria-labelledby="GradientAnisotropicDiffusion" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Gradient Anisotropic Diffusion Filter</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="numberOfIterations_GradientAnisotropicDiffusion">Number Of Iterations:&nbsp;</label>
+                    <input type="text" id="numberOfIterations_GradientAnisotropicDiffusion" size="10">
+                    <br><br>
+                    <label for="timeStep_GradientAnisotropicDiffusion">Time Step:&nbsp;</label>
+                    <input type="text" id="timeStep_GradientAnisotropicDiffusion" size="10">
+                    <br><br>
+                    <label for="conductance_GradientAnisotropicDiffusion">Conductance:&nbsp;</label>
+                    <input type="text" id="conductance_GradientAnisotropicDiffusion" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="GradientAnisotropicDiffusion()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="BinaryDilate" tabindex="-1" role="dialog" aria-labelledby="BinaryDilate" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Binary Dilate Filter</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="radiusValue_BinaryDilate">Radius:&nbsp;</label>
+                    <input type="text" id="radiusValue_BinaryDilate" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="BinaryDilate()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="BinaryErode" tabindex="-1" role="dialog" aria-labelledby="BinaryErode" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Binary Erode Filter</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="radiusValue_BinaryErode">Radius:&nbsp;</label>
+                    <input type="text" id="radiusValue_BinaryErode" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="BinaryErode()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="GrayScaleDilate" tabindex="-1" role="dialog" aria-labelledby="GrayScaleDilate" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">GrayScale Dilate Filter</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="radiusValue_GrayScaleDilate">Radius:&nbsp;</label>
+                    <input type="text" id="radiusValue_GrayScaleDilate" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="GrayScaleDilate()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="GrayScaleErode" tabindex="-1" role="dialog" aria-labelledby="GrayScaleErode" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">GrayScale Erode Filter</h2>
+                <button ype="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="radiusValue_GrayScaleErode">Radius:&nbsp;</label>
+                    <input type="text" id="radiusValue_GrayScaleErode" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="GrayScaleErode()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="CannyEdgeDetection" tabindex="-1" role="dialog" aria-labelledby="CannyEdgeDetection" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Canny Edge Detection Filter</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="variance_CannyEdgeDetection">Variance:&nbsp;</label>
+                    <input type="text" id="variance_CannyEdgeDetection" size="10">
+                    <br><br>
+                    <label for="lowerThreshold_CannyEdgeDetection">Lower Threshold:&nbsp;</label>
+                    <input type="text" id="lowerThreshold_CannyEdgeDetection" size="10">
+                    <br><br>
+                    <label for="upperThreshold_CannyEdgeDetection">Upper Threshold:&nbsp;</label>
+                    <input type="text" id="upperThreshold_CannyEdgeDetection" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="CannyEdgeDetection()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="SobelEdgeDetection" tabindex="-1" role="dialog" aria-labelledby="SobelEdgeDetection" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Sobel Edge Detection Filter</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <p>- No Parameters Required</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="SobelEdgeDetection()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="LaplacianRecursive" tabindex="-1" role="dialog" aria-labelledby="LaplacianRecursive" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Laplacian Recursive Filter</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"> 
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <p>- No Parameters Required</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="LaplacianRecursive()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="GradientMagnitude" tabindex="-1" role="dialog" aria-labelledby="GradientMagnitude" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Gradient Magnitude Filter</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">               
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <p>- No Parameters Required</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="GradientMagnitude()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="Sigmoid" tabindex="-1" role="dialog" aria-labelledby="Sigmoid" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Sigmoid Filter</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="outputMinimum_Sigmoid">Output Minimum:&nbsp;</label>
+                    <input type="text" id="outputMinimum_Sigmoid" size="10">
+                    <br><br>
+                    <label for="outputMaximum_Sigmoid">Output Maximum:&nbsp;</label>
+                    <input type="text" id="outputMaximum_Sigmoid" size="10">
+                    <br><br>
+                    <label for="alpha_Sigmoid">Alpha:&nbsp;</label>
+                    <input type="text" id="alpha_Sigmoid" size="10">
+                    <br><br>
+                    <label for="beta_Sigmoid">Beta:&nbsp;</label>
+                    <input type="text" id="beta_Sigmoid" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="Sigmoid()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="BinaryThreshold" tabindex="-1" role="dialog" aria-labelledby="BinaryThreshold" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Binary Threshold Segmentation</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="lowerThreshold_BinaryThreshold">Lower Threshold:&nbsp;</label>
+                    <input type="text" id="lowerThreshold_BinaryThreshold" size="10">
+                    <br><br>
+                    <label for="upperThreshold_BinaryThreshold">Upper Threshold:&nbsp;</label>
+                    <input type="text" id="upperThreshold_BinaryThreshold" size="10">
+                    <br><br>
+                    <label for="outsideValue_BinaryThreshold">Outside Value:&nbsp;</label>
+                    <input type="text" id="outsideValue_BinaryThreshold" size="10">
+                    <br><br>
+                    <label for="insideValue_BinaryThreshold">Inside Value:&nbsp;</label>
+                    <input type="text" id="insideValue_BinaryThreshold" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="BinaryThreshold()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="OtsuThreshold" tabindex="-1" role="dialog" aria-labelledby="OtsuThreshold" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Otsu Threshold Segmentation</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="numberOfHistogramBins_OtsuThreshold">Number Of Histogram Bins:&nbsp;</label>
+                    <input type="text" id="numberOfHistogramBins_OtsuThreshold" size="10">
+                    <br><br>
+                    <label for="numberOfThresholds_OtsuThreshold">Number Of Thresholds:&nbsp;</label>
+                    <input type="text" id="numberOfThresholds_OtsuThreshold" size="10">
+                    <br><br>
+                    <label for="labelOffset_OtsuThreshold">Label Offset:&nbsp;</label>
+                    <input type="text" id="labelOffset_OtsuThreshold" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="OtsuThreshold()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="Threshold" tabindex="-1" role="dialog" aria-labelledby="Threshold" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Threshold Segmentation</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="lowerThreshold_Threshold">Lower Threshold:&nbsp;</label>
+                    <input type="text" id="lowerThreshold_Threshold" size="10">
+                    <br><br>
+                    <label for="upperThreshold_Threshold">Upper Threshold:&nbsp;</label>
+                    <input type="text" id="upperThreshold_Threshold" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="Threshold()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="ConfidenceConnected" tabindex="-1" role="dialog" aria-labelledby="ConfidenceConnected" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Confidence Connected Segmentation</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="PstX_ConfidenceConnected">Position X:&nbsp;</label>
+                    <input type="text" id="PstX_ConfidenceConnected" size="10">
+                    <br><br>
+                    <label for="PstY_ConfidenceConnected">Position Y:&nbsp;</label>
+                    <input type="text" id="PstY_ConfidenceConnected" size="10">
+                    <br><br>
+                    <label for="iterations_ConfidenceConnected">Number Of Iterations:&nbsp;</label>
+                    <input type="text" id="iterations_ConfidenceConnected" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="ConfidenceConnected()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="Watershed" tabindex="-1" role="dialog" aria-labelledby="Watershed" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Watershed Segmentation</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="threshold_Watershed">Threshold Value:&nbsp;</label>
+                    <input type="text" id="threshold_Watershed" size="10">
+                    <br><br>
+                    <label for="level_Watershed">Level:&nbsp;</label>
+                    <input type="text" id="level_Watershed" size="10">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="Watershed()">Apply</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div style="position:relative;max-width:1000px">
+    <button type="button" class="btn btn-md enjoy-css2" data-toggle="modal" data-target="#readDicomInfo">Read Dicom Image Info</button>
+    <label style="color: black" for="colormaps">Colormap</label>
+    <select id="colormaps" style="width:10%">
+       <option value="">Select...</option>
+    </select>
+    <button id="save" type="button" class="btn enjoy-css2"><span class="glyphicon glyphicon-save-file"></span> Save Image</button>
+    <input id="filename" style="height:45px;font-size:18px" type="text" value="{{photo_name_clicked}}.png">
+    <button id="fullscreen1" type="button" class="btn btn-md enjoy-css2"><i class="material-icons">zoom_out_map</i></button>
+</div>
+
+<div style="position:relative;max-width:1000px;height:800px;background-color:black" class="cornerstone-enabled-image imageViewerViewport" oncontextmenu="return false" unselectable="on" onselectstart="return false;" onmousedown="return false;">
+    <canvas id="colorbar" width="0px" height="0px"></canvas>
+    <div id="dicomImage" style="height:100%;width:100%;border-color:337ab7;border-style:double;border-width:1px"></div>
+    <div id="mrbottomright" style="color:white;font-size:20px;position:absolute;bottom:6px;right:3px">
+        <div id="zoomText">Zoom: </div>
+    </div>
+    <div id="mrbottomleft" style="color:white;font-size:20px;position:absolute;bottom:6px;left:3px">
+        <div id="WWWCText">WW/WC:</div>
+    </div>
+</div>
+
+<div style="padding-top:20px; padding-bottom: 20px; font-size: 20px;"><span id="coords" style="color:black;background-color:white;"></span></div>
+
+<!-- ITK -->
+
+<div style="position:relative;max-width:1000px">
+    <p style="color:white;font-size:20px">Processing Tools</p>
+    <div class="btn-toolbar" style="position:relative;max-width:1000px">
+        <div class="btn-group-vertical">
+
+            <div class="btn-group btn-group-justified">
+
+                <div class="btn-group">
+                    <button type="button" class="btn enjoy-css2 dropdown-toggle" data-toggle="dropdown">Linear Image Denoising<span class="caret"></span></button>
+                    <ul class="dropdown-menu" role="menu">
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#Mean">Mean</button>
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#Median">Median</button>
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#BinomialBlur">Binomial Blur</button>
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#RecursiveGaussian">Recursive Gaussian</button>
+                    </ul>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn enjoy-css2 dropdown-toggle" data-toggle="dropdown">Non-Linear Image Denoising<span class="caret"></span></button>
+                    <ul class="dropdown-menu" role="menu">
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#CurvatureAnisotropicDiffusion">Curvature Anisotropic Diffusion</button>
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#CurvatureFlow">Curvature Flow</button>
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#GradientAnisotropicDiffusion">Gradient Anisotropic Diffusion</button>
+                    </ul>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn enjoy-css2 dropdown-toggle" data-toggle="dropdown">Image Morphology<span class="caret"></span></button>
+                    <ul class="dropdown-menu" role="menu">
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#BinaryDilate">Binary Dilate</button>
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#BinaryErode">Binary Erode</button>
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#GrayScaleDilate">GrayScale Dilate</button>
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#GrayScaleErode">GrayScale Erode</button>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="btn-group btn-group-justified">
+                <div class="btn-group">
+                    <button type="button" class="btn enjoy-css2 dropdown-toggle" data-toggle="dropdown">Edge Detection/Feature Extraction<span class="caret"></span></button>
+                    <ul class="dropdown-menu" role="menu">
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#CannyEdgeDetection">CannyEdge Detection</button>
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#SobelEdgeDetection">SobelEdge Detection</button>
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#LaplacianRecursive">Laplacian Recursive Gaussian</button>
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#GradientMagnitude">Gradient Magnitude</button>
+                    </ul>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn enjoy-css2 dropdown-toggle" data-toggle="dropdown">Image Intensity Transformations<span class="caret"></span></button>
+                    <ul class="dropdown-menu" role="menu">
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#Sigmoid">Sigmoid</button>
+                    </ul>
+                </div>
+
+            </div>
+
+            <div class="btn-group btn-group-justified">
+
+                <div class="btn-group">
+                    <button type="button" class="btn enjoy-css2 dropdown-toggle" data-toggle="dropdown">Thresholding<span class="caret"></span></button>
+                    <ul class="dropdown-menu" role="menu">
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#OtsuThreshold">Otsu Threshold</button>
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#BinaryThreshold">Binary Threshold</button>
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#Threshold">Threshold</button>
+                    </ul>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn enjoy-css2 dropdown-toggle" data-toggle="dropdown">Region Growing<span class="caret"></span></button>
+                    <ul class="dropdown-menu" role="menu">
+                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#ConfidenceConnected">Confidence Connected</button>
+                    </ul>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#Watershed">Watershed</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+<br><br>
+<div style="position:relative;max-width:1000px">
+    <button id="save2" type="button" class="btn enjoy-css2"><span class="glyphicon glyphicon-save-file"></span> Save Processed Image</button>
+    <input id="filename2" style="height:45px;font-size:18px" type="text" value="{{photo_name_clicked}}_Processed.png">
+    <button id="fullscreen2" type="button" class="btn btn-md enjoy-css2"><i class="material-icons">zoom_out_map</i></button>
+</div>
+
+<div style="position:relative;max-width:1000px;height:800px;background-color:black" class="cornerstone-enabled-image imageViewerViewport" oncontextmenu="return false" unselectable="on" onselectstart="return false;" onmousedown="return false;">
+    <div id="dicomImage2" style="height:100%;width:100%;border-color:337ab7;border-style:double;border-width:1px"></div>
+</div>
+
+<div style="padding-top:20px; padding-bottom: 20px; font-size: 20px"><span id="coords2" style="color:black;background-color:white;"></span></div>
+
+<p style="color:black">Coloring Tool</p>
+
+<div>
+    <label for="toolType" style="color:black">Type:</label>
+    <select id="toolType" style="width:10%">
+            <option value="Select">Select</option>
+            <option value="brush">Default</option>
+            <option value="adaptiveBrush">Adaptive</option>
+    </select> &nbsp;&nbsp;
+    <label for="radiusSlider" style="color:black">Radius: <span id="valBox">0</span> px</label>
+    <input autocomplete="off" id="radiusSlider" type="range" min="0" max="20" value="0" steps="1" style="width:100px" />
+    <br>
+    <button id="drawErase" class="btn btn-primary">Erase</button>
+</div>
+
+<div class="col-xs-6">
+    <dialog class="relabelDialog" oncontextmenu="return false">
+        <h2>Edit your annotation</h2>
+        <div class="annotationTextInputOptions">
+            <label for="annotationTextInput">New label</label>
+            <input type="text" id="relabelText" placeholder="A" maxlength="1" size="1" style="text-transform:uppercase">
+            <input type="number" id="relabelNumber" placeholder="1" style="width: 3em">
+        </div>
+        <div>
+            <a class="relabelRemove btn btn-sm btn-secondary">Remove marker</a>
+            <a class="relabelConfirm btn btn-sm btn-primary">OK</a>
+        </div>
+    </dialog>
+</div>
+
+<div class="row" style="margin:300px"></div>
+
+<!-- // Dicom File Parser -->
+<div class="modal fade" id="readDicomInfo" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Dicom Image Data</h4>
+            </div>
+            <div class="modal-body">
+                <div id="dropZone" class="container-fluid">
+                    <br>
+                    <div id="status" class="alert alert-success">
+                        <div id="statusText">
+                            Status: Ready (no file loaded)
+                        </div>
+                        <ul id="warnings">
+                        </ul>
+                    </div>
+
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Patient Information</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Patient Name: <span data-dicom="x00100010"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Patient ID: <span data-dicom="x00100020"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Patient Birth Date: <span data-dicom="x00100030"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Patient Sex: <span data-dicom="x00100040"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Study Information</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Study Description: <span data-dicom="x00081030"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Protocol Name: <span data-dicom="x00181030"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Accession #: <span data-dicom="x00080050"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Study Id: <span data-dicom="x00200010"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Study Date: <span data-dicom="x00080020"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Study Time: <span data-dicom="x00080030"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Series Information</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Series Description: <span data-dicom="x0008103e"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Series #: <span data-dicom="x00200011"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Modality: <span data-dicom="x00080060"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Body Part: <span data-dicom="x00180015"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Series Date: <span data-dicom="x00080021"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Series Time: <span data-dicom="x00080031"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Instance Information</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Instance #: <span data-dicom="x00200013"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Acquisition #: <span data-dicom="x00200012"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Acquisition Date: <span data-dicom="x00080022"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Acquisition Time: <span data-dicom="x00080032"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Content Date: <span data-dicom="x00080023"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Content Time: <span data-dicom="x00080033"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Image Information</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Rows: <span data-dicomunit="x00280010"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Columns: <span data-dicomunit="x00280011"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Photometric Interpretation: <span data-dicom="x00280004"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Image Type: <span data-dicom="x00080008"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Bits Allocated: <span data-dicomunit="x00280100"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Bits Stored: <span data-dicomunit="x00280101"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    HighBit: <span data-dicomunit="x00280102"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Pixel Representation (0=us): <span data-dicomunit="x00280103"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Rescale Slope: <span data-dicom="x00281053"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Rescale Intercept: <span data-dicom="x00281052"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Image Position Patient: <span data-dicom="x00200032"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Image Orientation Patient: <span data-dicom="x00200037"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Pixel Spacing: <span data-dicom="x00280030"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Samples Per Pixel: <span data-dicomunit="x00280002"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Equipment Information</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Manufacturer: <span data-dicom="x00080070"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    Model: <span data-dicom="x00081090"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    Station Name: <span data-dicom="x00081010"></span>
+                                </div>
+                                <div class="col-xs-6">
+                                    AE Title: <span data-dicom="x00020016"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-12">
+                                    Institution Name: <span data-dicom="x00080080"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-12">
+                                    Software Version: <span data-dicom="x00181020"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-12">
+                                    Implementation Version Name: <span data-dicom="x00020013"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">UIDS</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-xs-12">
+                                    Study UID: <span data-dicom="x0020000d"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-12">
+                                    Series UID: <span data-dicom="x0020000e"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-12">
+                                    Instance UID: <span data-dicom="x00080018"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-12">
+                                    SOP Class UID: <span data-dicom="x00080016"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-12">
+                                    Transfer Syntax UID: <span data-dicom="x00020010"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-12">
+                                    Frame of Reference UID: <span data-dicom="x00200052"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    ///S3 Bucket///
+    /*
+    	window.onload = function() {
+    	  	AWS.config.update({
+    		    "accessKeyId": "AKIAIKKE2KHD2LLKXHYQ",
+    		    "secretAccessKey": "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",
+    		    "region": "us-east-1"
+    		});
+    		var s3 = new AWS.S3();            
+    		var params = {
+    		    Bucket: "mywebmedbucket",
+    		    Delimiter: "/",
+    		    EncodingType: "url"
+    		};
+    	};
+
+    */
+    /// Algorithms ///
+
+    function mean() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:mean' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                radius_mean: $('#radius_mean').val()
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#Mean').modal('toggle');
+            }
+        });
+    }
+
+    function median() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:median' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                radius_median: $('#radius_median').val()
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#Median').modal('toggle');
+            }
+        });
+    }
+
+    function BinomialBlur() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:BinomialBlur' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                numberOfRepetitions_BinomialBlur: $('#numberOfRepetitions_BinomialBlur').val()
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#BinomialBlur').modal('toggle');
+            }
+        });
+    }
+
+    function RecursiveGaussian() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:RecursiveGaussian' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                sigma_RecursiveGaussian: $('#sigma_RecursiveGaussian').val()
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#RecursiveGaussian').modal('toggle');
+            }
+        });
+    }
+
+    function CurvatureAnisotropicDiffusion() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:CurvatureAnisotropicDiffusion' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                numberOfIterations_CurvatureAnisotropicDiffusion: $('#numberOfIterations_CurvatureAnisotropicDiffusion').val(),
+                timeStep_CurvatureAnisotropicDiffusion: $('#timeStep_CurvatureAnisotropicDiffusion').val(),
+                conductance_CurvatureAnisotropicDiffusion: $('#conductance_CurvatureAnisotropicDiffusion').val()
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#CurvatureAnisotropicDiffusion').modal('toggle');
+            }
+        });
+    }
+
+    function CurvatureFlow() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:CurvatureFlow' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                numberOfIterations_CurvatureFlow: $('#numberOfIterations_CurvatureFlow').val(),
+                timeStep_CurvatureFlow: $('#timeStep_CurvatureFlow').val(),
+            },
+            success: function(data) {
+                numberOfIterations_CurvatureFlow
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#CurvatureFlow').modal('toggle');
+            }
+        });
+    }
+
+    function GradientAnisotropicDiffusion() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:GradientAnisotropicDiffusion' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                numberOfIterations_GradientAnisotropicDiffusion: $('#numberOfIterations_GradientAnisotropicDiffusion').val(),
+                timeStep_GradientAnisotropicDiffusion: $('#timeStep_GradientAnisotropicDiffusion').val(),
+                conductance_GradientAnisotropicDiffusion: $('#conductance_GradientAnisotropicDiffusion').val()
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#GradientAnisotropicDiffusion').modal('toggle');
+            }
+        });
+    }
+
+    function BinaryDilate() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:BinaryDilate' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                radiusValue_BinaryDilate: $('#radiusValue_BinaryDilate').val()
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#BinaryDilate').modal('toggle');
+            }
+        });
+    }
+
+    function BinaryErode() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:BinaryErode' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                radiusValue_BinaryErode: $('#radiusValue_BinaryErode').val()
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#BinaryErode').modal('toggle');
+            }
+        });
+    }
+
+    function GrayScaleDilate() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:GrayScaleDilate' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                radiusValue_GrayScaleDilate: $('#radiusValue_GrayScaleDilate').val()
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#GrayScaleDilate').modal('toggle');
+            }
+        });
+    }
+
+    function GrayScaleErode() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:GrayScaleErode' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                radiusValue_GrayScaleErode: $('#radiusValue_GrayScaleErode').val()
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#GrayScaleErode').modal('toggle');
+            }
+        });
+    }
+
+    function CannyEdgeDetection() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:CannyEdgeDetection' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                variance_CannyEdgeDetection: $('#variance_CannyEdgeDetection').val(),
+                lowerThreshold_CannyEdgeDetection: $('#lowerThreshold_CannyEdgeDetection').val(),
+                upperThreshold_CannyEdgeDetection: $('#upperThreshold_CannyEdgeDetection').val()
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#CannyEdgeDetection').modal('toggle');
+            }
+        });
+    }
+
+    function SobelEdgeDetection() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:SobelEdgeDetection' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#SobelEdgeDetection').modal('toggle');
+            }
+        });
+    }
+
+    function LaplacianRecursive() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:LaplacianRecursive' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#LaplacianRecursive').modal('toggle');
+            }
+        });
+    }
+
+    function GradientMagnitude() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:GradientMagnitude' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#GradientMagnitude').modal('toggle');
+            }
+        });
+    }
+
+    function Sigmoid() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:Sigmoid' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                outputMinimum_Sigmoid: $('#outputMinimum_Sigmoid').val(),
+                outputMaximum_Sigmoid: $('#outputMaximum_Sigmoid').val(),
+                alpha_Sigmoid: $('#alpha_Sigmoid').val(),
+                beta_Sigmoid: $('#beta_Sigmoid').val()
+
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#Sigmoid').modal('toggle');
+            }
+        });
+    }
+
+    function BinaryThreshold() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:BinaryThreshold' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                lowerThreshold_BinaryThreshold: $('#lowerThreshold_BinaryThreshold').val(),
+                upperThreshold_BinaryThreshold: $('#upperThreshold_BinaryThreshold').val(),
+                outsideValue_BinaryThreshold: $('#outsideValue_BinaryThreshold').val(),
+                insideValue_BinaryThreshold: $('#insideValue_BinaryThreshold').val()
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#BinaryThreshold').modal('toggle');
+            }
+        });
+    }
+
+    function OtsuThreshold() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:OtsuThreshold' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                numberOfHistogramBins_OtsuThreshold: $('#numberOfHistogramBins_OtsuThreshold').val(),
+                numberOfThresholds_OtsuThreshold: $('#numberOfThresholds_OtsuThreshold').val(),
+                labelOffset_OtsuThreshold: $('#labelOffset_OtsuThreshold').val()
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#OtsuThreshold').modal('toggle');
+            }
+        });
+    }
+
+    function Threshold() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:Threshold' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                lowerThreshold_Threshold: $('#lowerThreshold_Threshold').val(),
+                upperThreshold_Threshold: $('#upperThreshold_Threshold').val()
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#Threshold').modal('toggle');
+            }
+        });
+    }
+
+    function ConfidenceConnected() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:ConfidenceConnected' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                PstX_ConfidenceConnected: $('#PstX_ConfidenceConnected').val(),
+                PstY_ConfidenceConnected: $('#PstY_ConfidenceConnected').val(),
+                iterations_ConfidenceConnected: $('#iterations_ConfidenceConnected').val()
+
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#ConfidenceConnected').modal('toggle');
+            }
+        });
+    }
+
+    function Watershed() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:Watershed' pi ps photo_name_clicked %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                threshold_Watershed: $('#threshold_Watershed').val(),
+                level_Watershed: $('#level_Watershed').val()
+            },
+            success: function(data) {
+
+                var imageId_processed = "wadouri:/" + data;
+
+                var element_processed = document.getElementById('dicomImage2');
+
+                cornerstone.enable(element_processed);
+
+                cornerstone.loadAndCacheImage(imageId_processed).then(function(image) {
+                    var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
+                    cornerstone.displayImage(element_processed, image, viewport_processed);
+                });
+                $('#Watershed').modal('toggle');
+            }
+        });
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+
+    $(document).ready(function() {
+
+        //Parsing the Dicom File to retrieve information
+        function dumpDataSet(dataSet) {
+            $('span[data-dicom]').each(function(index, value) {
+                var attr = $(value).attr('data-dicom');
+                var element = dataSet.elements[attr];
+                var text = " ";
+                if (element !== undefined) {
+                    var str = dataSet.string(attr);
+                    if (str !== undefined) {
+                        text = str;
+                    }
+                }
+                $(value).text(text);
+            });
+
+            $('span[data-dicomunit]').each(function(index, value) {
+                var attr = $(value).attr('data-dicomunit');
+                var element = dataSet.elements[attr];
+                var text = " ";
+                if (element !== undefined) {
+                    if (element.length === 2) {
+                        text += dataSet.uint16(attr);
+                    } else if (element.length === 4) {
+                        text += dataSet.uint32(attr);
+                    }
+                }
+
+                $(value).text(text);
+            });
+
+        }
+
+        $('#status').removeClass('alert-warning alert-success alert-danger').addClass('alert-info');
+        $('#warnings').empty();
+        document.getElementById('statusText').innerHTML = 'Status: Loading file, please wait..';
+
+        //XMLHttpRequest
+        
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', '/{{photo_dcm_path}}', true);
+                xhr.responseType = 'arraybuffer';
+
+                xhr.onload = function(e) {
+                    // Here we have the file data as an ArrayBuffer.
+                    //dicomParser requires as input a Uint8Array so we create that here
+                    var byteArray = new Uint8Array(this.response);
+
+                    var kb = byteArray.length / 1024;
+                    var mb = kb / 1024;
+                    var byteStr = mb > 1 ? mb.toFixed(3) + " MB " : kb.toFixed(0) + " KB ";
+                    document.getElementById('statusText').innerHTML = '<span class="glyphicon glyphicon-cog"></span>Status: Parsing ' + byteStr + ' bytes, please wait..';
+
+                    // set a short timeout to do the parse so the DOM has time to update itself with the above message
+                    setTimeout(function() {
+
+                        var dataSet;
+                        // Invoke the paresDicom function and get back a DataSet object with the contents
+                        try {
+                            var start = new Date().getTime();
+
+                            dataSet = dicomParser.parseDicom(byteArray);
+                            // Here we call dumpDataSet to update the DOM with the contents of the dataSet
+                            dumpDataSet(dataSet);
+
+                            var end = new Date().getTime();
+                            var time = end - start;
+                            if (dataSet.warnings.length > 0) {
+                                $('#status').removeClass('alert-success alert-info alert-danger').addClass('alert-warning');
+                                $('#statusText').html('Status: Warnings encountered while parsing file (file of size ' + byteStr + ' parsed in ' + time + 'ms)');
+
+                                dataSet.warnings.forEach(function(warning) {
+                                    $("#warnings").append('<li>' + warning + '</li>');
+                                });
+                            } else {
+                                var pixelData = dataSet.elements.x7fe00010;
+                                if (pixelData) {
+                                    $('#status').removeClass('alert-warning alert-info alert-danger').addClass('alert-success');
+                                    $('#statusText').html('Status: Ready (file of size ' + byteStr + ' parsed in ' + time + 'ms)');
+                                } else {
+                                    $('#status').removeClass('alert-warning alert-info alert-danger').addClass('alert-success');
+                                    $('#statusText').html('Status: Ready - no pixel data found (file of size ' + byteStr + ' parsed in ' + time + 'ms)');
+                                }
+                            }
+                        } catch (err) {
+                            $('#status').removeClass('alert-success alert-info alert-warning').addClass('alert-danger');
+                            document.getElementById('statusText').innerHTML = 'Status: Error - ' + err + ' (file of size ' + byteStr + ' )';
+                        }
+
+                    }, 30);
+                };
+
+                xhr.send();
+        
+        var element = document.getElementById('dicomImage');
+
+
+        //Full Screen
+
+        document.getElementById('fullscreen1').addEventListener('click', function(e) {
+
+            toggleFullscreen(1);
+        });
+
+        document.getElementById('fullscreen2').addEventListener('click', function(e) {
+
+            toggleFullscreen(2);
+        });
+
+        function toggleFullscreen(img_cont) {
+
+            // image enable the dicomImage element
+
+            if (img_cont == 1) {
+                var element_Fullscreen = document.getElementById('dicomImage');
+            }
+
+            if (img_cont == 2) {
+                var element_Fullscreen = document.getElementById('dicomImage2');
+            }
+
+            function disableAllTools_FullScreen() {
+                cornerstoneTools.wwwc.disable(element_Fullscreen);
+                cornerstoneTools.pan.deactivate(element_Fullscreen, 2); // 2 is middle mouse button
+                cornerstoneTools.zoom.deactivate(element_Fullscreen, 4); // 4 is right mouse button
+                cornerstoneTools.probe.deactivate(element_Fullscreen, 1);
+                cornerstoneTools.length.deactivate(element_Fullscreen, 1);
+                cornerstoneTools.ellipticalRoi.deactivate(element_Fullscreen, 1);
+                cornerstoneTools.rectangleRoi.deactivate(element_Fullscreen, 1);
+                cornerstoneTools.angle.deactivate(element_Fullscreen, 1);
+                cornerstoneTools.highlight.deactivate(element_Fullscreen, 1);
+                cornerstoneTools.freehand.deactivate(element_Fullscreen, 1);
+                cornerstoneTools.arrowAnnotate.deactivate(element_Fullscreen, 1);
+                cornerstoneTools.arrowAnnotateTouch.deactivate(element_Fullscreen);
+                cornerstoneTools.seedAnnotate.deactivate(element_Fullscreen, 1);
+                cornerstoneTools.seedAnnotateTouch.deactivate(element_Fullscreen);
+                cornerstoneTools.brush.disable(element_Fullscreen);
+                cornerstoneTools.adaptiveBrush.disable(element_Fullscreen);
+                $("#toolType").val("Select");
+            }
+
+            disableAllTools_FullScreen();
+            cornerstoneTools.zoom.activate(element_Fullscreen, 5);
+
+            var container = element_Fullscreen.parentNode;
+
+            if (!document.fullscreenElement && !document.mozFullScreenElement &&
+                !document.webkitFullscreenElement && !document.msFullscreenElement) {
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.msRequestFullscreen) {
+                    container.msRequestFullscreen();
+                } else if (container.mozRequestFullScreen) {
+                    container.mozRequestFullScreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+
+        // Populate colormap dropdown with all the default ones available 
+        // in cornerstone and also a "Custom " option
+
+        function fillColormapsList() {
+            const dropdown = document.getElementById('colormaps');
+            const colormapsList = cornerstone.colors.getColormapsList();
+
+            const addOption = function(id, name, disabled) {
+                const option = document.createElement("OPTION");
+                option.value = id;
+                option.textContent = name;
+                option.disabled = !!disabled;
+                dropdown.append(option);
+            };
+
+            colormapsList.forEach(function(colormapItem) {
+                addOption(colormapItem.id, colormapItem.name);
+            });
+
+            // Horizontal Line
+            addOption('', '──────────', true);
+
+            addOption('custom', 'Custom');
+        }
+
+        //DICOM
+        cornerstoneWADOImageLoader.configure({
+            beforeSend: function(xhr) {
+                // Add custom headers here (e.g. auth tokens)
+                //xhr.setRequestHeader('APIKEY', 'my auth token');
+            }
+        });
+
+        var config = {
+
+            webWorkerPath: "{% static 'web_med/js/cornerstoneWADOImageLoaderWebWorker.js' %}",
+            taskConfiguration: {
+                'decodeTask': {
+                    codecsPath: "{% static 'web_med/js/cornerstoneWADOImageLoaderCodecs.js' %}"
+                }
+            },
+            drawAllMarkers: true
+        };
+
+        // Comment this out to draw only the top and left markers
+        cornerstoneTools.orientationMarkers.setConfiguration(config);
+
+        cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
+        cornerstoneWADOImageLoader.webWorkerManager.initialize(config);
+
+        var imageId = "wadouri:/{{photo_dcm_path}}";
+
+        cornerstone.enable(element);
+        cornerstoneTools.mouseInput.enable(element);
+        cornerstoneTools.touchInput.enable(element);
+        cornerstoneTools.mouseWheelInput.enable(element);
+
+        cornerstone.loadAndCacheImage(imageId).then(function(image) {
+            var viewport = cornerstone.getDefaultViewportForImage(element, image);
+            cornerstone.displayImage(element, image, viewport);
+
+            cornerstoneTools.orientationMarkers.enable(element);
+
+            var image_coordinates = document.getElementById('dicomImage');
+            image_coordinates.addEventListener('mousemove', function(event) {
+                const pixelCoords = cornerstone.pageToPixel(image_coordinates, event.pageX, event.pageY);
+                document.getElementById('coords').textContent = "Coordinates: Pixel X=" + Number((pixelCoords.x).toFixed(2)) + ", Pixel Y=" + Number((pixelCoords.y).toFixed(2));
+            });
+            var image_coordinates2 = document.getElementById('dicomImage2');
+            image_coordinates2.addEventListener('mousemove', function(event) {
+                const pixelCoords = cornerstone.pageToPixel(image_coordinates2, event.pageX, event.pageY);
+                document.getElementById('coords2').textContent = "Coordinates: Pixel X=" + Number((pixelCoords.x).toFixed(2)) + ", Pixel Y=" + Number((pixelCoords.y).toFixed(2));
+            });
+            /////////////////////////////////////////////////////////
+
+            document.getElementById('reset').addEventListener('click', function() {
+                location.reload(true);
+            });
+
+            document.getElementById('OriginalImage').addEventListener('click', function(e) {
+                element = document.getElementById('dicomImage');
+                cornerstone.enable(element);
+                cornerstoneTools.mouseInput.enable(element);
+                cornerstoneTools.touchInput.enable(element);
+                cornerstoneTools.mouseWheelInput.enable(element);
+
+                viewport = cornerstone.getViewport(element);
+            });
+
+            document.getElementById('ProcessedImage').addEventListener('click', function(e) {
+                element = document.getElementById('dicomImage2');
+                cornerstone.enable(element);
+                cornerstoneTools.mouseInput.enable(element);
+                cornerstoneTools.touchInput.enable(element);
+                cornerstoneTools.mouseWheelInput.enable(element);
+
+                viewport = cornerstone.getViewport(element);
+            });
+
+
+            // Enable all tools we want to use with this element
+
+            // Add event handlers to flip or rotate the image
+            document.getElementById('hFlip').addEventListener('click', function(e) {
+                const viewport = cornerstone.getViewport(element);
+                viewport.hflip = !viewport.hflip;
+                cornerstone.setViewport(element, viewport);
+            });
+
+            document.getElementById('vFlip').addEventListener('click', function(e) {
+                const viewport = cornerstone.getViewport(element);
+                viewport.vflip = !viewport.vflip;
+                cornerstone.setViewport(element, viewport);
+            });
+
+            document.getElementById('lRotate').addEventListener('click', function(e) {
+                const viewport = cornerstone.getViewport(element);
+                viewport.rotation -= 90;
+                cornerstone.setViewport(element, viewport);
+            });
+
+            document.getElementById('rRotate').addEventListener('click', function(e) {
+                const viewport = cornerstone.getViewport(element);
+                viewport.rotation += 90;
+                cornerstone.setViewport(element, viewport);
+            });
+
+            // Add event handlers to zoom the image in and out
+            document.getElementById('zoomIn').addEventListener('click', function(e) {
+                const viewport = cornerstone.getViewport(element);
+                viewport.scale += 0.25;
+                cornerstone.setViewport(element, viewport);
+            });
+            document.getElementById('zoomOut').addEventListener('click', function(e) {
+                const viewport = cornerstone.getViewport(element);
+                viewport.scale -= 0.25;
+                cornerstone.setViewport(element, viewport);
+            });
+            // Mouse Wheel For Zooming
+            document.getElementById('zoom').addEventListener('click', function(e) {
+                disableAllTools();
+                cornerstoneTools.zoom.activate(element, 5); // 5 means left mouse button and right mouse button
+            });
+            document.getElementById('reset').addEventListener('click', function(e) {
+                const viewport = cornerstone.getViewport(element);
+                cornerstone.reset(element, viewport);
+            });
+
+            //All Image Tools Example  
+
+            // Listen for changes to the viewport so we can update the text overlays in the corner
+            function onImageRendered(e) {
+                var eventData = e.detail;
+                var viewport = eventData.viewport;
+                document.getElementById('WWWCText').textContent = "WW/WC: " + Math.round(viewport.voi.windowWidth) + "/" + Math.round(viewport.voi.windowCenter);
+                document.getElementById('zoomText').textContent = "Zoom: " + viewport.scale.toFixed(2);
+            };
+
+            element.addEventListener('cornerstoneimagerendered', onImageRendered);
+
+            var config = {
+                // invert: true,
+                minScale: 0.25,
+                maxScale: 20.0,
+                preventZoomOutsideImage: true
+            };
+
+            cornerstoneTools.zoom.setConfiguration(config);
+
+            // helper function used by the tool button handlers to disable the active tool
+            // before making a new tool active
+            function disableAllTools() {
+                cornerstoneTools.wwwc.disable(element);
+                cornerstoneTools.pan.deactivate(element, 2); // 2 is middle mouse button
+                cornerstoneTools.zoom.deactivate(element, 4); // 4 is right mouse button
+                cornerstoneTools.probe.deactivate(element, 1);
+                cornerstoneTools.length.deactivate(element, 1);
+                cornerstoneTools.ellipticalRoi.deactivate(element, 1);
+                cornerstoneTools.rectangleRoi.deactivate(element, 1);
+                cornerstoneTools.angle.deactivate(element, 1);
+                cornerstoneTools.highlight.deactivate(element, 1);
+                cornerstoneTools.freehand.deactivate(element, 1);
+                cornerstoneTools.arrowAnnotate.deactivate(element, 1);
+                cornerstoneTools.arrowAnnotateTouch.deactivate(element);
+                cornerstoneTools.seedAnnotate.deactivate(element, 1);
+                cornerstoneTools.seedAnnotateTouch.deactivate(element);
+                cornerstoneTools.brush.disable(element);
+                cornerstoneTools.adaptiveBrush.disable(element);
+                $("#toolType").val("Select");
+            }
+
+            // Tool button event handlers that set the new active tool
+            document.getElementById('enableWindowLevelTool').addEventListener('click', function(e) {
+                disableAllTools();
+                cornerstoneTools.wwwc.activate(element, 1);
+            });
+            document.getElementById('invert').addEventListener('click', function(e) {
+                let viewport = cornerstone.getViewport(element);
+                viewport.invert = !viewport.invert;
+                cornerstone.setViewport(element, viewport);
+            });
+            document.getElementById('pan').addEventListener('click', function(e) {
+                disableAllTools();
+                cornerstoneTools.pan.activate(element, 3); // 3 means left mouse button and middle mouse button
+            });
+            document.getElementById('probe').addEventListener('click', function(e) {
+                disableAllTools();
+                cornerstoneTools.probe.activate(element, 1);
+            });
+            document.getElementById('showProbe').addEventListener('click', function(e) {
+                cornerstoneTools.probe.enable(element, 1);
+                return false;
+            });
+            document.getElementById('hideProbe').addEventListener('click', function(e) {
+                cornerstoneTools.probe.disable(element, 1);
+                return false;
+            });
+            document.getElementById('clearProbe').addEventListener('click', function(e) {
+                cornerstoneTools.clearToolState(element, "probe");
+                cornerstone.updateImage(element);
+            });
+            document.getElementById('circleroi').addEventListener('click', function(e) {
+                disableAllTools();
+                cornerstoneTools.ellipticalRoi.activate(element, 1);
+            });
+            document.getElementById('showCircleroi').addEventListener('click', function(e) {
+                cornerstoneTools.ellipticalRoi.enable(element, 1);
+                return false;
+            });
+            document.getElementById('hideCircleroi').addEventListener('click', function(e) {
+                cornerstoneTools.ellipticalRoi.disable(element, 1);
+                return false;
+            });
+            document.getElementById('clearCircleroi').addEventListener('click', function(e) {
+                cornerstoneTools.clearToolState(element, "ellipticalRoi");
+                cornerstone.updateImage(element);
+            });
+            document.getElementById('rectangleroi').addEventListener('click', function(e) {
+                disableAllTools();
+                cornerstoneTools.rectangleRoi.activate(element, 1);
+            });
+            document.getElementById('showRectangle').addEventListener('click', function(e) {
+                cornerstoneTools.rectangleRoi.enable(element, 1);
+                return false;
+            });
+            document.getElementById('hideRectangle').addEventListener('click', function(e) {
+                cornerstoneTools.rectangleRoi.disable(element, 1);
+                return false;
+            });
+            document.getElementById('clearRectangle').addEventListener('click', function(e) {
+                cornerstoneTools.clearToolState(element, "rectangleRoi");
+                cornerstone.updateImage(element);
+            });
+            document.getElementById('angle').addEventListener('click', function(e) {
+                disableAllTools();
+                cornerstoneTools.angle.activate(element, 1);
+            });
+            document.getElementById('showAngle').addEventListener('click', function(e) {
+                cornerstoneTools.angle.enable(element, 1);
+                return false;
+            });
+            document.getElementById('hideAngle').addEventListener('click', function(e) {
+                cornerstoneTools.angle.disable(element, 1);
+                return false;
+            });
+            document.getElementById('clearAngle').addEventListener('click', function(e) {
+                cornerstoneTools.clearToolState(element, "angle");
+                cornerstone.updateImage(element);
+            });
+            document.getElementById('enableLength').addEventListener('click', function(e) {
+                disableAllTools();
+                cornerstoneTools.length.activate(element, 1);
+            });
+            document.getElementById('showLength').addEventListener('click', function(e) {
+                cornerstoneTools.length.enable(element, 1);
+                return false;
+            });
+            document.getElementById('hideLength').addEventListener('click', function(e) {
+                cornerstoneTools.length.disable(element, 1);
+                return false;
+            });
+            document.getElementById('clearLengthData').addEventListener('click', function(e) {
+                cornerstoneTools.clearToolState(element, "length");
+                cornerstone.updateImage(element);
+            });
+            document.getElementById('highlight').addEventListener('click', function(e) {
+                disableAllTools();
+                cornerstoneTools.highlight.activate(element, 1);
+                return false;
+            });
+            document.getElementById('showhighlight').addEventListener('click', function(e) {
+                cornerstoneTools.highlight.enable(element);
+                return false;
+            });
+            document.getElementById('hidehighlight').addEventListener('click', function(e) {
+                cornerstoneTools.highlight.disable(element);
+                return false;
+            });
+            document.getElementById('clearhighlight').addEventListener('click', function(e) {
+                cornerstoneTools.clearToolState(element, "highlight");
+                cornerstone.updateImage(element);
+            });
+            document.getElementById('freehand').addEventListener('click', function(e) {
+                disableAllTools();
+                cornerstoneTools.freehand.activate(element, 1);
+            });
+            document.getElementById('showFreeform').addEventListener('click', function(e) {
+                cornerstoneTools.freehand.enable(element, 1);
+                return false;
+            });
+            document.getElementById('hideFreeform').addEventListener('click', function(e) {
+                cornerstoneTools.freehand.disable(element, 1);
+                return false;
+            });
+            document.getElementById('clearFreeform').addEventListener('click', function(e) {
+                cornerstoneTools.clearToolState(element, "freehand");
+                cornerstone.updateImage(element);
+            });
+            //Annotation
+            document.getElementById('showAnnotate').addEventListener('click', function(e) {
+                cornerstoneTools.arrowAnnotate.enable(element);
+                cornerstoneTools.arrowAnnotateTouch.enable(element);
+                return false;
+            });
+            document.getElementById('hideAnnotate').addEventListener('click', function(e) {
+                cornerstoneTools.arrowAnnotate.disable(element);
+                cornerstoneTools.arrowAnnotateTouch.disable(element);
+                return false;
+            });
+            document.getElementById('annotate').addEventListener('click', function(e) {
+                disableAllTools();
+                cornerstoneTools.arrowAnnotate.activate(element, 1);
+                cornerstoneTools.arrowAnnotateTouch.activate(element);
+                return false;
+            });
+            document.getElementById('clearAnnotate').addEventListener('click', function(e) {
+                cornerstoneTools.clearToolState(element, "arrowAnnotate");
+                cornerstone.updateImage(element);
+            });
+            //Disable All & Clear All    
+            document.getElementById('disableAll').addEventListener('click', function(e) {
+                disableAllTools();
+            });
+            document.getElementById('clearToolData').addEventListener('click', function() {
+                var toolStateManager = cornerstoneTools.getElementToolStateManager(element);
+                // Note that this only works on ImageId-specific tool state managers (for now)
+                toolStateManager.clear(element);
+                cornerstone.updateImage(element);
+            });
+
+            //Save Button
+
+            // Tool button event handlers that set the new active tool
+            document.getElementById('save').addEventListener('click', function() {
+                element_Save = document.getElementById('dicomImage');
+                filename = document.getElementById('filename').value;
+                cornerstoneTools.saveAs(element_Save, filename);
+                return false;
+            });
+
+            // Tool button event handlers that set the new active tool
+            document.getElementById('save2').addEventListener('click', function() {
+                element_Save2 = document.getElementById('dicomImage2');
+                filename2 = document.getElementById('filename2').value;
+                cornerstoneTools.saveAs(element_Save2, filename2);
+                return false;
+            });
+
+            //Segmentation Brush
+
+            var radiusSlider = document.getElementById('radiusSlider');
+            var radius = radiusSlider.value;
+
+            var configuration = cornerstoneTools.brush.getConfiguration();
+            configuration.radius = parseInt(radius, 10);
+
+            const colormapId = 'MyNewColorMap';
+            const colormap = cornerstone.colors.getColormap(colormapId);
+
+            colormap.setNumberOfColors(2);
+            colormap.setColor(0, [0, 0, 0, 0]);
+            colormap.setColor(1, [200, 0, 0, 255]);
+
+            configuration.colormapId = colormapId;
+
+            var toolType = 'brush';
+            cornerstoneTools.brush.setConfiguration(configuration);
+
+            var adaptiveConfig = cornerstoneTools.adaptiveBrush.getConfiguration();
+            adaptiveConfig.colormapId = colormapId;
+            cornerstoneTools.adaptiveBrush.setConfiguration(adaptiveConfig);
+
+            cornerstone.addLayer(element, image);
+            cornerstone.updateImage(element);
+            viewport.pixelReplication = true;
+            cornerstone.setViewport(element, viewport);
+
+            cornerstoneTools.mouseWheelInput.enable(element);
+            cornerstoneTools.stackScrollWheel.activate(element);
+            cornerstoneTools.pan.activate(element, 2);
+            cornerstoneTools.zoom.activate(element, 4);
+            cornerstoneTools[toolType].activate(element, 1);
+
+            var drawEraseButton = document.getElementById('drawErase');
+            let drawValue = 1;
+            drawEraseButton.addEventListener('click', function() {
+                var configuration = cornerstoneTools[toolType].getConfiguration();
+                if (configuration.draw === 0) {
+                    configuration.draw = 1;
+                    drawEraseButton.textContent = "Erase";
+                } else {
+                    configuration.draw = 0;
+                    drawEraseButton.textContent = "Draw";
+                }
+                cornerstoneTools[toolType].setConfiguration(configuration);
+            });
+
+            var radiusSlider = document.getElementById('radiusSlider');
+            radiusSlider.addEventListener('input', function() {
+                var configuration = cornerstoneTools[toolType].getConfiguration();
+                var radius = radiusSlider.value;
+                document.getElementById('valBox').textContent = radius;
+                configuration.radius = parseInt(radius, 10);
+                cornerstoneTools[toolType].setConfiguration(configuration);
+                cornerstone.updateImage(element, true);
+            });
+
+            var toolTypeSelect = document.getElementById('toolType');
+            toolTypeSelect.addEventListener('change', function() {
+                toolType = toolTypeSelect.value;
+
+                cornerstoneTools.wwwc.disable(element);
+                cornerstoneTools.pan.deactivate(element, 2); // 2 is middle mouse button
+                cornerstoneTools.zoom.deactivate(element, 4); // 4 is right mouse button
+                cornerstoneTools.probe.deactivate(element, 1);
+                cornerstoneTools.length.deactivate(element, 1);
+                cornerstoneTools.ellipticalRoi.deactivate(element, 1);
+                cornerstoneTools.rectangleRoi.deactivate(element, 1);
+                cornerstoneTools.angle.deactivate(element, 1);
+                cornerstoneTools.highlight.deactivate(element, 1);
+                cornerstoneTools.freehand.deactivate(element, 1);
+                cornerstoneTools.arrowAnnotate.deactivate(element, 1);
+                cornerstoneTools.arrowAnnotateTouch.deactivate(element);
+                cornerstoneTools.seedAnnotate.deactivate(element, 1);
+                cornerstoneTools.seedAnnotateTouch.deactivate(element);
+                cornerstoneTools.brush.disable(element);
+                cornerstoneTools.adaptiveBrush.disable(element);
+
+                var configuration = cornerstoneTools[toolType].getConfiguration();
+                var radius = radiusSlider.value;
+                configuration.radius = parseInt(radius, 10);
+                configuration.draw = drawValue;
+                cornerstoneTools[toolType].setConfiguration(configuration);
+
+                cornerstoneTools[toolType].activate(element, 1);
+                cornerstone.updateImage(element, true);
+            });
+
+            //Seed
+            // Register the dialogs using the HTML5 Dialog Polyfill
+            var relabelDialogSeed = document.querySelectorAll('.relabelDialog')[0];
+            dialogPolyfill.registerDialog(relabelDialogSeed);
+
+            // Define a callback to get your text annotation
+            // This could be used, e.g. to open a modal
+            function getTextCallbackSeed(doneGetTextCallbackSeed) {
+
+                if (configSeed.countUp) {
+                    configSeed.currentNumber++;
+                } else {
+                    configSeed.currentNumber--;
+                }
+
+                var text = configSeed.currentLetter + configSeed.currentNumber;
+                doneGetTextCallbackSeed(text);
+            }
+
+            // Define a callback to edit your text annotation
+            // This could be used, e.g. to open a modal
+            function changeTextCallbackSeed(data, eventData, doneChangingTextCallbackSeed) {
+                var relabelDialogSeed = document.querySelectorAll('.relabelDialog')[0];
+
+                var getTextLetter = document.getElementById('relabelText');
+                var getTextNumber = document.getElementById('relabelNumber');
+
+                var confirm = relabelDialogSeed.querySelector('.relabelConfirm');
+                var remove = relabelDialogSeed.querySelector('.relabelRemove');
+
+                getTextLetter.value = data.text.charAt(0);
+                getTextNumber.value = data.text.charAt(1);
+
+                relabelDialogSeed.showModal();
+
+                function confirmHandler() {
+                    relabelDialogSeed.close();
+                    doneChangingTextCallbackSeed(data, getTextLetter.value.toUpperCase() + getTextNumber.value);
+                }
+
+                confirm.removeEventListener('click', confirmHandler);
+                confirm.addEventListener('click', confirmHandler);
+
+                // If the remove button is clicked, delete this marker
+                function removeHandler() {
+                    relabelDialogSeed.close();
+                    doneChangingTextCallbackSeed(data, undefined, true);
+                }
+
+                remove.removeEventListener('click', removeHandler);
+                remove.addEventListener('click', removeHandler);
+
+                relabelDialogSeed.removeEventListener("keydown", keyPressHandler);
+                relabelDialogSeed.addEventListener('keydown', keyPressHandler);
+
+                function keyPressHandler(e) {
+                    // If Enter is pressed, close the dialog
+                    if (e.which === 13) {
+                        closeHandler();
+                    }
+                }
+
+                function closeHandler() {
+                    relabelDialogSeed.close();
+                    doneChangingTextCallbackSeed(data, getTextLetter.value.toUpperCase() + getTextNumber.value);
+                    // Reset the text value
+                    getTextLetter.value = " ";
+                    getTextNumber.value = " ";
+                }
+            }
+
+            var configSeed = {
+                getTextCallback: getTextCallbackSeed,
+                changeTextCallback: changeTextCallbackSeed,
+                drawHandles: false,
+                drawHandlesOnHover: true,
+                currentLetter: 'A',
+                currentNumber: 0,
+                showCoordinates: true,
+                countUp: true
+            };
+
+            // Try commenting this out to see the default behaviour
+            // By default, the tool uses Javascript's Prompt function
+            // to ask the user for the annotation. This example uses a
+            // slightly nicer HTML5 dialog element.
+
+            cornerstoneTools.seedAnnotate.setConfiguration(configSeed);
+
+            // Tool button event handlers that set the new active tool
+            document.getElementById('showSeed').addEventListener('click', function() {
+                cornerstoneTools.seedAnnotate.enable(element);
+                cornerstoneTools.seedAnnotateTouch.enable(element);
+                return false;
+            });
+            document.getElementById('hideSeed').addEventListener('click', function() {
+                cornerstoneTools.seedAnnotate.disable(element);
+                cornerstoneTools.seedAnnotateTouch.disable(element);
+                return false;
+            });
+            document.getElementById('seed').addEventListener('click', function() {
+                disableAllTools();
+                cornerstoneTools.seedAnnotate.activate(element, 1);
+                cornerstoneTools.seedAnnotateTouch.activate(element);
+                return false;
+            });
+            document.getElementById('check-coords').addEventListener('click', function() {
+                configSeed.showCoordinates = document.getElementById('check-coords').checked;
+                cornerstone.updateImage(element);
+            });
+            document.getElementById('check-countUp').addEventListener('click', function() {
+                configSeed.countUp = document.getElementById('check-countUp').checked;
+                cornerstone.updateImage(element);
+            });
+            document.getElementById('f-letter').addEventListener('input', function() {
+                configSeed.currentLetter = document.getElementById('f-letter').value.toUpperCase();
+                if (configSeed.countUp == true) {
+                    configSeed.currentNumber = parseInt(document.getElementById('f-number').value) - 1;
+                } else {
+                    configSeed.currentNumber = parseInt(document.getElementById('f-number').value) + 1;
+                }
+            });
+            document.getElementById('f-number').addEventListener('input', function() {
+                if (configSeed.countUp == true) {
+                    configSeed.currentNumber = parseInt(document.getElementById('f-number').value) - 1;
+                } else {
+                    configSeed.currentNumber = parseInt(document.getElementById('f-number').value) + 1;
+                }
+            });
+
+            var toolType = 'seedAnnotate';
+            var clearLabels = document.getElementById('clearLabels');
+            clearLabels.addEventListener('click', function() {
+                // Clear all annotations
+                cornerstoneTools.clearToolState(element, toolType);
+                cornerstone.updateImage(element);
+                // Reset the initial values for naming
+                configSeed.currentLetter = document.getElementById('f-letter').value;
+                if (configSeed.countUp == true) {
+                    configSeed.currentNumber = parseInt(document.getElementById('f-number').value) - 1;
+                } else {
+                    configSeed.currentNumber = parseInt(document.getElementById('f-number').value) + 1;
+                }
+            })
+
+        });
+
+        /////// END of Load Function ///////
+
+        // Dropdown listener to get the new colormap
+        // selected by the user and update the image
+        function colormapChanged() {
+            const viewport = cornerstone.getViewport(element);
+            const colormapId = document.getElementById('colormaps').value;
+            let colormap;
+
+            // Use selected the first option ("Select... ")
+            if (colormapId === '') {
+                return;
+            } else if (colormapId === 'custom') {
+                colormap = getCustomLookupTable();
+            } else {
+                colormap = cornerstone.colors.getColormap(colormapId);
+            }
+
+            viewport.colormap = colormap;
+            cornerstone.setViewport(element, viewport);
+            cornerstone.updateImage(element, true);
+
+            // Update the colorbar at the top of the image
+            updateColorbar(colormap);
+        }
+
+        function getCustomLookupTable(minPixelValue, maxPixelValue) {
+            const colormap = cornerstone.colors.getColormap('myCustomColorMap');
+            colormap.setNumberOfColors(6);
+
+            // You can also use `addColor` but in this case it wouldn't work.
+            // Any colormap returned by `getColormap` lasts forever (global) and
+            // calling `addColor` would result in duplicated colors.
+            colormap.insertColor(0, [188, 252, 201, 255]); // Banana
+            colormap.insertColor(1, [245, 222, 179, 255]); // Wheat
+            colormap.insertColor(2, [255, 125, 64, 255]); // Flesh
+            colormap.insertColor(3, [135, 38, 87, 255]); // Raspberry
+            colormap.insertColor(4, [227, 206, 87, 255]); // Mint
+            colormap.insertColor(5, [51, 160, 201, 255]); // Peacock
+
+            return colormap;
+        }
+
+        // Update the colorbar at the top of the image
+        function updateColorbar(colormap) {
+            const lookupTable = colormap.createLookupTable();
+            const canvas = document.getElementById('colorbar');
+            const ctx = canvas.getContext('2d');
+            const height = canvas.height;
+            const width = canvas.width;
+            const colorbar = ctx.createImageData(1000, 20);
+
+            // Set the min and max values then the lookup table
+            // will be able to return the right color for this range
+            lookupTable.setTableRange(0, width);
+
+            // Update the colorbar pixel by pixel
+            for (let col = 0; col < width; col++) {
+                const color = lookupTable.mapValue(col);
+
+                for (let row = 0; row < height; row++) {
+                    const pixel = (col + row * width) * 4;
+                    colorbar.data[pixel] = color[0];
+                    colorbar.data[pixel + 1] = color[1];
+                    colorbar.data[pixel + 2] = color[2];
+                    colorbar.data[pixel + 3] = color[3];
+                }
+            }
+
+            ctx.putImageData(colorbar, 0, 0);
+        }
+
+        document.getElementById('colormaps').addEventListener("change", colormapChanged);
+
+        fillColormapsList();
+
+    });
+</script>
+
+<style>
+    .dropdown-menu {
+        min-width: 100px;
+        padding: 1px 0;
+    }
+    
+    .modal-dialog {
+        min-height: calc(100vh - 60px);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow: auto;
+    }
+    
+    @media(max-width: 768px) {
+        .modal-dialog {
+            min-height: calc(100vh - 20px);
+        }
+    }
+    
+    .enjoy-css {
+        width: 50px !important;
+        height: 50px !important;
+        -webkit-box-sizing: content-box;
+        -moz-box-sizing: content-box;
+        box-sizing: content-box;
+        cursor: pointer;
+        padding: 10px 20px;
+        border: 2px solid #337ab7;
+        color: rgba(255, 255, 255, 0.9);
+        -o-text-overflow: ellipsis;
+        text-overflow: ellipsis;
+        background: rgb(75, 75, 75);
+        -webkit-box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.5) inset;
+        box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.5) inset;
+        -webkit-transition: all 300ms cubic-bezier(0.42, 0, 0.58, 1);
+        -moz-transition: all 300ms cubic-bezier(0.42, 0, 0.58, 1);
+        -o-transition: all 300ms cubic-bezier(0.42, 0, 0.58, 1);
+        transition: all 300ms cubic-bezier(0.42, 0, 0.58, 1);
+        font: normal 10px/normal Georgia, serif;
+        text-align: center;
+        display: table-cell;
+        vertical-align: middle;
+    }
+    
+    .enjoy-css2 {
+        cursor: pointer;
+        padding: 10px 20px;
+        border: 2px solid #337ab7;
+        color: rgba(255, 255, 255, 0.9);
+        -o-text-overflow: ellipsis;
+        text-overflow: ellipsis;
+        background: rgb(75, 75, 75);
+        -webkit-box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.5) inset;
+        box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.5) inset;
+        -webkit-transition: all 300ms cubic-bezier(0.42, 0, 0.58, 1);
+        -moz-transition: all 300ms cubic-bezier(0.42, 0, 0.58, 1);
+        -o-transition: all 300ms cubic-bezier(0.42, 0, 0.58, 1);
+        transition: all 300ms cubic-bezier(0.42, 0, 0.58, 1);
+        font: normal 18px/normal Georgia, serif;
+        text-align: center;
+        display: table-cell;
+        vertical-align: middle;
+    }
+    
+    .container {
+        padding-right: 0px;
+        padding-left: 0px;
+        margin-left: 100px;
+        margin-right: 100px;
+        width: 1500px;
+    }
+    
+    .direction {
+        z-index: 1;
+        color: #fff;
+        text-transform: uppercase;
+        font-size: 16px;
+        position: absolute;
+        margin: 14px;
+        padding: 4px;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        text-align: center;
+        background-color: rgba(0, 0, 0, .3);
+    }
+    
+    #top {
+        top: 24 px;
+    }
+    
+    #bottom {
+        bottom: 0;
+    }
+    
+    #left {
+        left: 0;
+    }
+    
+    #right {
+        right: 0;
+    }
+    
+    button.btn:focus {
+        background: #375975;
+        color: white;
+    }
+    
+    img {
+        max-width: 100%;
+    }
+    
+    body {
+        background: #333;
+    }
+    /* prevents selection when left click dragging */
+    
+    .disable-selection {
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+    /* prevents cursor from changing to the i bar on the overlays*/
+    
+    .noIbar {
+        cursor: default;
+    }
+    
+    .annotationDialog,
+    .relabelDialog {
+        z-index: 1000;
+        position: fixed;
+        margin: 0px;
+        left: 40%;
+        top: 40%;
+        width: 300px;
+        border: 1px black solid;
+        border-radius: 5px;
+    }
+    
+    .annotationTextInputOptions {
+        padding: 5px 0px;
+    }
+    
+    .annotationTextInput {
+        margin-left: 5px;
+    }
+    
+    .annotationDialogConfirm {
+        float: right;
+    }
+    
+    #dropZone {
+        border-style: solid;
+        border-width: 1px;
+        border-color: lightgray;
+    }
+</style>
+{% endblock %}

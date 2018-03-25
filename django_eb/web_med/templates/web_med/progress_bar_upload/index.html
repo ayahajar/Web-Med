@@ -1,0 +1,175 @@
+{% extends 'web_med/detail.html' %} {% load static %} {% block title %}Progress Bar Upload{% endblock %} {% block javascript %} {# JQUERY FILE UPLOAD SCRIPTS #}
+<script src="{% static 'web_med/js/jquery-file-upload/vendor/jquery.ui.widget.js' %}"></script>
+<script src="{% static 'web_med/js/jquery-file-upload/jquery.iframe-transport.js' %}"></script>
+<script src="{% static 'web_med/js/jquery-file-upload/jquery.fileupload.js' %}"></script>
+
+{# PHOTOS PAGE SCRIPTS #}
+<script src="{% static 'web_med/js/progress-bar-upload.js' %}"></script>
+<script type="text/javascript" src="{% static 'web_med/js/extra.js' %}"></script>
+
+{% endblock %} {% block photos_contentsss %}
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<div style="margin-bottom: 20px;">
+    <button type="button" class="btn btn-primary js-upload-photos">
+      <span class="glyphicon glyphicon-cloud-upload"></span> Upload Dicom Files
+    </button>
+    <input id="fileupload" type="file" name="file" multiple onchange="getfiles(this.files)" style="display: none;" data-url="{% url 'web_med:progress_bar_upload' pi ps %}" data-form-data='{"csrfmiddlewaretoken": "{{ csrf_token }}"}'>
+</div>
+
+<p style="font-size: 1.8rem;">
+    <b><u>Uploaded Files:</u></b>
+</p>
+<br>
+<p>
+    <a href="{% url 'web_med:SliceDrop' pi ps %}">SliceDrop</a>
+</p>
+<p>
+    <a href="{% url 'web_med:l15-process' pi ps %}">View Rendered Dicom Volume</a>
+</p>
+<p>
+    <button type="button" class="btn btn-primary" id="VolumeSeg" data-toggle="modal" data-target="#VTKSeg">Volume Segmentation</button>
+</p>
+
+<table id="gallery" class="table table-bordered">
+    <tbody>
+        {% for photo in photos %}
+        <tr>
+            <td style="font-size: 2rem">
+                {{ photo.get_file_name }}
+            </td>
+            <td>
+                <button type=" button" class="openImageDialog btn btn-primary btn-lg" data-id="/media/png/{{pi}}/{{photo.get_file_name_withoutExtension}}.png" data-toggle="modal" href="#myModal">Quick View</button>
+
+                <!-- Modal -->
+                <div class="modal fade" id="myModal" role="dialog">
+                    <div class="modal-dialog" role="document">
+                        <!-- Modal Content -->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                <h4 class="modal-title"><b>Quick View</b></h4>
+                            </div>
+                            <div class="modal-body">
+                                <img id="myImage" class="img-responsive" src=" " alt style="width:700px;">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <script>
+                    $(document).on("click", ".openImageDialog", function() {
+                        console.log('Ok');
+                    });
+
+                    $(document).on("click", ".openImageDialog", function() {
+                        var myImageId = $(this).data('id');
+                    });
+
+                    $(document).on("click", ".openImageDialog", function() {
+                        var myImageId = $(this).data('id');
+                        $(".modal-body #myImage").attr("src", myImageId);
+                    });
+                </script>
+
+
+            </td>
+            <td>
+                <a class="btn btn-warning btn-lg" href="{% url 'web_med:dicom-process' pk=pi slug=ps name=photo.get_file_name_withoutExtension %}">
+                    <span class="glyphicon glyphicon-pencil"></span>
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="modal fade" id="modal-progress" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Uploading...</h4>
+            </div>
+            <div class="modal-body">
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" style="width: 0%;">0%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="VTKSeg" tabindex="-1" role="dialog" aria-labelledby="Volume Segmentation" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Volume Segmentation</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <label for="">Lower Threshold:&nbsp;</label>
+                    <input type="text" id="LowerThreshold" size="10">
+                    <br><br>
+                    <label for="">Upper Threshold:&nbsp;</label>
+                    <input type="text" id="UpperThreshold" size="10">
+                    <br><br>
+                    <label for="">Name:&nbsp;</label>
+                    <input type="text" id="Name" size="10" value="Bones">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" onclick="VolumeSegmentation()">Apply</button>
+		    <button type="button" class="btn btn-primary" onclick="VTKSegView()">View</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    function VTKSegView() { 
+
+        window.location = "{% url 'web_med:vtksegview' pk=pi slug=ps %}" ;
+
+    }
+
+    function VolumeSegmentation() {
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'web_med:VolumeSegmentation' pi ps %}",
+            async: true,
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                LowerThreshold: $('#LowerThreshold').val(),
+                UpperThreshold: $('#UpperThreshold').val(),
+                Name: $('#Name').val()
+            }
+        });
+    }
+</script>
+<style>
+    .modal-dialog {
+        min-height: calc(100vh - 60px);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow: auto;
+    }
+    
+    @media(max-width: 768px) {
+        .modal-dialog {
+            min-height: calc(100vh - 20px);
+        }
+    }
+</style>
+{% endblock %}

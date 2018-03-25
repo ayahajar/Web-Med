@@ -1,0 +1,86 @@
+{% extends 'web_med/base.html' %} {% load staticfiles %} {% block title %}AMI Processing{% endblock %} {% block javascript %}
+
+<!-- AMI -->
+<script type="text/javascript" src="https://use.edgefonts.net/source-code-pro.js"></script>
+<script type="text/javascript" src="https://cdn.rawgit.com/dataarts/dat.gui/master/build/dat.gui.min.js"></script>
+<script type="text/javascript" src="https://cdn.rawgit.com/mrdoob/stats.js/master/build/stats.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/87/three.min.js"></script>
+
+{% endblock %} {% block content %}
+
+<div id="my-gui-container"></div>
+
+<div class="visualizer">
+    <div id="r0" class="renderer"></div>
+    <div id="r1" class="renderer"></div>
+    <div id="r2" class="renderer"></div>
+    <div id="r3" class="renderer"></div>
+</div>
+
+<!-- /////////////////////////// Script /////////////////////////// -->
+<!--
+<script type="text/javascript" src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/loaders/STLLoader.js"></script>
+-->
+<script type="module" src="{% static 'web_med/js/viewers_quadview.js' %}"></script>
+
+
+<style>
+    html,
+    body {
+        height: 100%;
+    }
+    
+    body {
+        margin: 0;
+        overflow: hidden;
+        -webkit-box-sizing: border-box;
+        box-sizing: border-box;
+    }
+    
+    .visualizer {
+        width: 100%;
+        height: 100%;
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        -ms-flex-wrap: wrap;
+        flex-wrap: wrap;
+        background-color: #353535;
+    }
+    
+    .renderer {
+        background-color: #000;
+        width: 50%;
+        height: 50%;
+        -webkit-box-sizing: border-box;
+        box-sizing: border-box;
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        border-bottom: none;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    #r0 {
+        border-top: 2px solid #03a9f4;
+    }
+    
+    #r1 {
+        border-top: 2px solid #f44336;
+    }
+    
+    #r2 {
+        border-top: 2px solid #ffeb3b;
+    }
+    
+    #r3 {
+        border-top: 2px solid #8bc34a;
+    }
+    
+    #my-gui-container {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 1;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,55 @@
+body {
+    font-family: "Garamond", sans-serif;
+    font-size: 14px;
+    color: #fff;
+    background: #333333;
+}
+
+a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.container {
+    width: 1000px;
+    margin: 40px auto;
+    overflow: auto;
+}
+
+.slider-inner {
+    width: 700px;
+    height: 500px;
+    position: relative;
+    overflow: hidden;
+    float: left;
+    padding: 3px;
+    border: #666 solid 1px;
+}
+
+.slider-inner img {
+    display: none;
+    width: 700px;
+    height: 500px;
+}
+
+.slider-inner img.active {
+    display: inline-block;
+}
+
+.prev {
+    position: relative;
+    margin-right: -45px;
+    z-index: 100;
+    float: left;
+    margin-top: 200px;
+    cursor: pointer;
+}
+
+.next {
+    position: relative;
+    margin-left: -45px;
+    z-index: 100;
+    float: left;
+    margin-top: 200px;
+    cursor: pointer;
+}

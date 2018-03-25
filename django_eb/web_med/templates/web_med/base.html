@@ -1,0 +1,69 @@
+{% load static %}
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}WebMed{% endblock %}</title>
+
+    <!-- Loads the path to your static files -->
+    {% load staticfiles %}
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="{% static 'web_med/patientsstyle.css' %}" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Junction">
+
+    <script src="{% static 'web_med/js/jquery-3.1.1.min.js' %}"></script>
+    <script src="{% static 'web_med/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'web_med/js/es6-promise.min.js' %}"></script>
+
+</head>
+
+<body>
+    <nav class="navbar navbar-inverse">
+        <div class="container-fluid">
+
+            <!--Header-->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#topNavBar">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="{% url 'web_med:index' %}">
+                    <span class="glyphicon glyphicon-home" aria-hidden="true"></span>&nbsp;HomePage
+                </a>
+            </div>
+
+            <!--Items -->
+            <div class="collapse navbar-collapse" id="topNavBar">
+                <ul class="nav navbar-nav">
+                    <li class="active">
+                        <a href="{% url 'web_med:patients' %}">
+                            <span class="glyphicon glyphicon-user" aria-hidden="true"></span>&nbsp;Patients
+                        </a>
+                    </li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="">
+                        <a href="{% url 'web_med:logout' %}">
+                            <span class="glyphicon glyphicon-off" aria-hidden="true"></span>&nbsp;Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+    </nav>
+    <div class="container">
+        {% block content %} {% endblock %}
+    </div>
+    {% block javascript %} {% endblock %}
+</body>
+<style>
+    .navbar {
+        border-radius: 2;
+        font-size: 18px;
+    }
+</style>
+
+</html>

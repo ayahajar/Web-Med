@@ -1,0 +1,284 @@
+{% extends 'web_med/base.html' %} {% load staticfiles %} {% block title %}AMI Processing{% endblock %} {% block javascript %} {% endblock %} {% block content %}
+
+<div id="my-gui-container"></div>
+
+<div id="my-lut-container">
+    <div>Transfer function
+        <div id="my-tf" class="my-tf"></div>
+    </div>
+</div>
+
+<div id="r3d"></div>
+
+<!-- AMI -->
+<script type="text/javascript" src="https://use.edgefonts.net/source-code-pro.js"></script>
+<script type="text/javascript" src="https://cdn.rawgit.com/dataarts/dat.gui/master/build/dat.gui.min.js"></script>
+<script type="text/javascript" src="https://cdn.rawgit.com/mrdoob/stats.js/master/build/stats.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/87/three.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/ami.js/0.0.22/ami.min.js"></script>
+
+<!-- /////////////////////////// Script /////////////////////////// -->
+
+<script>
+    /* globals Stats, dat, AMI*/
+
+    // standard global letiables
+    var controls;
+    var threeD;
+    var renderer;
+    var stats;
+    var camera;
+    var scene;
+    var vrHelper;
+    var lut;
+    var ready = false;
+
+    var myStack = {
+        lut: 'random',
+        opacity: 'random',
+        steps: 256,
+        alphaCorrection: 0.5,
+        interpolation: 1
+    };
+
+    /**
+     * Handle mouse down event
+     */
+    function onMouseDown() {
+        if (vrHelper && vrHelper.uniforms) {
+            vrHelper.uniforms.uSteps.value = Math.floor(myStack.steps / 2);
+            vrHelper.interpolation = 0;
+        }
+    }
+
+    /**
+     * Handle mouse up event
+     */
+    function onMouseUp() {
+        if (vrHelper && vrHelper.uniforms) {
+            vrHelper.uniforms.uSteps.value = myStack.steps;
+            vrHelper.interpolation = myStack.interpolation;
+        }
+    }
+
+    /**
+     * Handle window resize event
+     */
+    function onWindowResize() {
+        // update the camera
+        camera.aspect = threeD.offsetWidth / threeD.offsetHeight;
+        camera.updateProjectionMatrix();
+
+        // notify the renderer of the size change
+        renderer.setSize(threeD.offsetWidth, threeD.offsetHeight);
+    }
+
+    /**
+     * Build GUI
+     */
+    function buildGUI() {
+        var gui = new dat.GUI({
+            autoPlace: false
+        });
+
+        var customContainer = document.getElementById('my-gui-container');
+        customContainer.appendChild(gui.domElement);
+
+        var stackFolder = gui.addFolder('Settings');
+        var lutUpdate = stackFolder.add(myStack, 'lut', lut.lutsAvailable());
+        lutUpdate.onChange(function(value) {
+            lut.lut = value;
+            vrHelper.uniforms.uTextureLUT.value.dispose();
+            vrHelper.uniforms.uTextureLUT.value = lut.texture;
+        });
+        // init LUT
+        lut.lut = myStack.lut;
+        vrHelper.uniforms.uTextureLUT.value.dispose();
+        vrHelper.uniforms.uTextureLUT.value = lut.texture;
+
+        var opacityUpdate = stackFolder.add(myStack, 'opacity', lut.lutsAvailable('opacity'));
+        opacityUpdate.onChange(function(value) {
+            lut.lutO = value;
+            vrHelper.uniforms.uTextureLUT.value.dispose();
+            vrHelper.uniforms.uTextureLUT.value = lut.texture;
+        });
+
+        var stepsUpdate = stackFolder.add(myStack, 'steps', 0, 512).step(1);
+        stepsUpdate.onChange(function(value) {
+            if (vrHelper.uniforms) {
+                vrHelper.uniforms.uSteps.value = value;
+            }
+        });
+
+        var alphaCorrrectionUpdate = stackFolder.add(myStack, 'alphaCorrection', 0, 1).step(0.01);
+        alphaCorrrectionUpdate.onChange(function(value) {
+            if (vrHelper.uniforms) {
+                vrHelper.uniforms.uAlphaCorrection.value = value;
+            }
+        });
+
+        stackFolder.add(vrHelper, 'interpolation', 0, 1).step(1);
+
+        stackFolder.open();
+    }
+
+    /**
+     * Init the scene
+     */
+    function init() {
+        /**
+         * Rendering loop
+         */
+        function animate() {
+            // render
+            controls.update();
+
+            if (ready) {
+                renderer.render(scene, camera);
+            }
+
+            stats.update();
+
+            // request new frame
+            requestAnimationFrame(function() {
+                animate();
+            });
+        }
+
+        // renderer
+        threeD = document.getElementById('r3d');
+        renderer = new THREE.WebGLRenderer({
+            alpha: true
+        });
+        renderer.setSize(threeD.offsetWidth, threeD.offsetHeight);
+        threeD.appendChild(renderer.domElement);
+
+        // stats
+        stats = new Stats();
+        threeD.appendChild(stats.domElement);
+
+        // scene
+        scene = new THREE.Scene();
+
+        // camera
+        camera = new THREE.PerspectiveCamera(45, threeD.offsetWidth / threeD.offsetHeight, 0.1, 100000);
+        camera.position.x = 150;
+        camera.position.y = 400;
+        camera.position.z = -350;
+        camera.up.set(-0.42, 0.86, 0.26);
+
+        // controls
+        controls = new AMI.TrackballControl(camera, threeD);
+        controls.rotateSpeed = 5.5;
+        controls.zoomSpeed = 1.2;
+        controls.panSpeed = 0.8;
+        controls.staticMoving = true;
+        controls.dynamicDampingFactor = 0.3;
+
+        threeD.addEventListener('mousedown', onMouseDown, false);
+        threeD.addEventListener('mouseup', onMouseUp, false);
+        window.addEventListener('resize', onWindowResize, false);
+
+        // start rendering loop
+        animate();
+    }
+
+    $(document).ready(function() {
+
+
+        // init threeJS...
+        init();
+
+        var file = '/{{nii_path}}';
+
+        var loader = new AMI.VolumeLoader(threeD);
+        loader.load(file).then(function() {
+            var series = loader.data[0].mergeSeries(loader.data)[0];
+            loader.free();
+            loader = null;
+            // get first stack from series
+            var stack = series.stack[0];
+
+            vrHelper = new AMI.VolumeRenderingHelper(stack);
+            // scene
+            scene.add(vrHelper);
+
+            // CREATE LUT
+            lut = new AMI.LutHelper('my-tf');
+            lut.luts = AMI.LutHelper.presetLuts();
+            lut.lutsO = AMI.LutHelper.presetLutsO();
+            // update related uniforms
+            vrHelper.uniforms.uTextureLUT.value = lut.texture;
+            vrHelper.uniforms.uLut.value = 1;
+
+            // update camrea's and interactor's target
+            var centerLPS = stack.worldCenter();
+            camera.lookAt(centerLPS.x, centerLPS.y, centerLPS.z);
+            camera.updateProjectionMatrix();
+            controls.target.set(centerLPS.x, centerLPS.y, centerLPS.z);
+
+            // create GUI
+            buildGUI();
+
+            ready = true;
+        });
+
+    });
+</script>
+
+<style>
+    #r3d {
+        background-color: #212121;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+    
+    #my-gui-container {
+        position: fixed;
+        top: 30px;
+        right: 20px;
+        z-index: 1;
+    }
+    
+    #my-lut-container {
+        position: fixed;
+        left: 50%;
+        transform: translate(-50%, 0);
+        z-index: 1;
+        color: #F9F9F9;
+        text-align: center;
+    }
+    
+    #my-lut-container>div>.my-tf {
+        position: relative;
+    }
+    
+    #my-lut-min {
+        margin-right: 10px;
+    }
+    
+    #my-lut-max {
+        margin-left: 10px;
+    }
+    
+    #my-lut-container>div {
+        margin-bottom: 10px;
+    }
+    
+    #my-lut-container>div>.my-tf> :first-child {
+        background: repeating-linear-gradient(-45deg, #353535, #353535 5px, black 5px, black 10px);
+    }
+    
+    #my-lut-container>div>.my-tf> :nth-child(2) {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+</style>
+{% endblock %}

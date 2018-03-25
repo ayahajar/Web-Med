@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Web-Based Medical Image Processing</title>
+
+    <!-- Loads the path to your static files -->
+    {% load staticfiles %}
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <!--<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Junction">-->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Raleway:400,300,600">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <style>
+        body {
+            font-family: "Raleway", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            line-height: 2;
+        }
+        
+        p {
+            font-size: 16px;
+            color: black;
+        }
+        
+        .navbar {
+            padding-top: 10px;
+            padding-bottom: 10px;
+            border: 0;
+            border-radius: 0;
+            margin-bottom: 0;
+            font-size: 18px;
+            letter-spacing: 5px;
+        }
+        
+        .navbar-nav li a:hover {
+            color: #1abc9c !important;
+        }
+        
+        .value-img {
+            margin-bottom: 1rem;
+        }
+        
+        .value-props {
+            margin-top: 9rem;
+            margin-bottom: 7rem;
+        }
+        
+        strong {
+            font-weight: bold;
+        }
+        
+        h2 {
+            font-size: 4.2rem;
+            display: block;
+            -webkit-margin-before: 0.83em;
+            -webkit-margin-after: 0.83em;
+            -webkit-margin-start: 0px;
+            -webkit-margin-end: 0px;
+            margin-top: 0;
+            margin-bottom: 2rem;
+            font-weight: 300;
+            line-height: 1.25;
+            letter-spacing: -.1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-inverse">
+        <div class="container-fluid">
+
+            <!--Header-->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle " data-toggle="collapse" data-target="#myNavbar ">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a style="color:white" class="navbar-brand " href="{% url 'web_med:index' %} ">
+                    Web-Med
+                </a>
+            </div>
+
+            <!--Items -->
+            <div class="collapse navbar-collapse " id="myNavbar">
+                <ul class=" nav navbar-nav navbar-right ">
+                    <li class=""><a style="color:white" href="{% url 'web_med:login' %} ">Log In</a></li>
+                    <li class=""><a style="color:white" href="{% url 'web_med:register' %} ">Register</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" style="max-width:800px;color:black;">
+        <section class="header " style="margin-top:6rem;text-align:center;">
+
+            <h2 class="title"><img src="{% static 'web_med/images/web-med-logo.png' %}" width="500" style="max-width:90%">
+                <br><br>Web-Based Medical Image Processing
+            </h2>
+            <div class="row value-props">
+                <div class="col-sm-4">
+                    <img class="value-img" src="{% static 'web_med/images/circle.png' %}" width="40 ">
+                    <p>Upload and Visualize Dicom/Nifti/VTK Files</p>
+                </div>
+                <div class="col-sm-4">
+                    <img class="value-img" src="{% static 'web_med/images/circle.png' %}" width="40 ">
+                    <p>Measurement and Annotation Tools</p>
+                </div>
+                <div class="col-sm-4">
+                    <img class="value-img" src="{% static 'web_med/images/circle.png' %}" width="40 ">
+                    <p>Pre-Processing and Segmentation Tools</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+</body>
+
+</html>

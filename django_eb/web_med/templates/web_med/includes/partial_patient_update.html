@@ -1,0 +1,16 @@
+<form method="post" action="{% url 'web_med:patient-update' form.instance.pk form.instance.slug %}" class="js-patient-update-form">
+    {% csrf_token %}
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">Update Patient</h4>
+    </div>
+    <div class="modal-body">
+        {% include 'web_med/includes/partial_patient_form.html' %}
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-primary">Update Patient</button>
+    </div>
+</form>

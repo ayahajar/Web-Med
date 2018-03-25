@@ -1,0 +1,40 @@
+{% extends 'web_med/detail.html' %} {% load static %} {% block title %}Drag and Drop Upload{% endblock %} {% block javascript %}
+<script src="{% static 'web_med/js/jquery-file-upload/vendor/jquery.ui.widget.js' %}"></script>
+<script src="{% static 'web_med/js/jquery-file-upload/jquery.iframe-transport.js' %}"></script>
+<script src="{% static 'web_med/js/jquery-file-upload/jquery.fileupload.js' %}"></script>
+
+{# PHOTOS PAGE SCRIPTS #}
+<script src="{% static 'web_med/js/drag-and-drop-upload.js' %}"></script>
+{% endblock %} {% block photos_contentsss_nii %}
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<div style="margin-bottom: 20px;">
+    <div class="well text-muted text-center" style="padding-top: 4rem; padding-bottom: 4rem;">
+        <span class="glyphicon glyphicon-arrow-down" style="font-size: 4rem;"></span>
+        <h3>Drop Nii Files Here to Upload</h3>
+    </div>
+    <input id="fileupload" type="file" name="file" multiple style="display: none;" data-url="{% url 'web_med:drag_and_drop_upload_nii' pi ps %}" data-form-data='{"csrfmiddlewaretoken": "{{ csrf_token }}"}'>
+</div>
+
+<p style="font-size: 1.8rem;">
+    <b><u>Uploaded Files:</u></b>
+</p>
+<br>
+<table id="gallery" class="table table-bordered">
+    <tbody>
+        {% for nii in niis %}
+        <tr>
+            <td>
+                {{ nii.get_file_name }}
+            </td>
+            <td>
+                <a class="btn btn-warning btn-lg" href="{% url 'web_med:nii-process' pk=pi slug=ps name=nii.get_file_name_withoutExtension %}">
+                    <span>View nii</span>
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends 'web_med/base.html' %} {% load staticfiles %} {% block title %}AMI Processing{% endblock %} {% block javascript %}
+<script type="text/javascript" src="https://cdn.rawgit.com/igorlino/elevatezoom-plus/1.1.6/src/jquery.ez-plus.js"></script>
+<script src="{% static 'web_med/js/hammer.min.js' %}"></script>
+<script src="{% static 'web_med/js/dialogPolyfill.js' %}"></script>
+
+<script src="{% static 'web_med/js/exampleImageIdLoader.js' %}"></script>
+<script src="{% static 'web_med/js/exampleMetaDataProvider.js' %}"></script>
+
+{% endblock %} {% block content %}
+
+<script type="text/javascript" src="http://get.goXTK.com/xtk.js"></script>
+
+
+
+
+<!-- /////////////////////////// Script /////////////////////////// -->
+
+<script>
+    window.onload = function() {
+
+        // create and initialize a 3D renderer
+        var r = new X.renderer3D();
+        r.init();
+
+        // create a new X.mesh
+        var vtk_image = new X.mesh();
+        // .. and associate the .vtk file to it
+
+        vtk_image.file = '/{{vtk_path}}';
+
+        // .. make it transparent
+        vtk_image.opacity = 0.7;
+
+        // .. add the mesh
+        r.add(vtk_image);
+
+        // re-position the camera to face the vtk_image
+        r.camera.position = [0, 400, 0];
+
+        // animate..
+        r.onRender = function() {
+
+            // rotate the vtk_image around the Z axis since we moved the camera, it is Z not X
+            //vtk_image.transform.rotateZ(1);
+
+            // we could also rotate the camera instead which is better in case
+            // we have a lot of objects and want to rotate them all:
+            // r.camera.rotate([1,0]);
+
+        };
+
+        r.render();
+
+    };
+</script>
+
+<style>
+    html,
+    body {
+        background-color: #000;
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden !important;
+    }
+</style>
+{% endblock %}

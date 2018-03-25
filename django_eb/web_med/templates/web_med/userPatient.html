@@ -1,0 +1,56 @@
+{% extends 'web_med/base.html' %} {% load static %} {% block title %}Patients{% endblock %} {% block javascript %}
+<script src="{% static 'web_med/js/patients.js' %}"></script>
+{% endblock %} {% block content %}
+
+<h1 class="page-header">List of all the Patients</h1>
+
+<p>
+    <button type="button" class="btn btn-success js-create-patient" data-url="{% url 'web_med:patient-add' %}">
+        <span class="glyphicon glyphicon-plus"></span>
+        New Patient
+    </button>
+</p>
+
+<div class="w3-container" style="margin-top: 2em">
+    <input style="margin-bottom:30px" class="w3-input w3-border w3-padding" type="text" placeholder="Search for Patients.." id="myInput" onkeyup="myFunction()">
+    <table class="table table-hover" id="patient-table">
+        <thead>
+            <tr>
+                <th scope="col">First Name</th>
+                <th scope="col">Last Name</th>
+                <th scope="col">Description</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+
+<div class="modal fade" id="modal-patient">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function myFunction() {
+        var input, filter, table, tr, td, i;
+        input = document.getElementById("myInput");
+        filter = input.value.toUpperCase();
+        table = document.getElementById("patient-table");
+        tr = table.getElementsByTagName("tr");
+        for (i = 0; i < tr.length; i++) {
+            td = tr[i].getElementsByTagName("td")[0];
+            if (td) {
+                if (td.innerHTML.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+</script>
+
+{% endblock %}

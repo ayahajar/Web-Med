@@ -1,0 +1,89 @@
+{% extends 'web_med/base.html' %} {% load static %} {% block title %}Patients{% endblock %} {% block javascript %}
+<script src="{% static 'web_med/js/patients.js' %}"></script>
+{% endblock %} {% block content %}
+
+<h1 class="page-header">Patients List</h1>
+
+<p>
+    <button type="button" class="btn btn-success js-create-patient" data-url="{% url 'web_med:patient-add' %}">
+        <span class="glyphicon glyphicon-plus"></span>
+        New Patient
+    </button>
+</p>
+
+<div class="w3-container" style="margin-top: 2em">
+    <input style="margin-bottom:30px;font-size: 1.6rem;" class="w3-input w3-border w3-padding" type="text" placeholder="Search for Patients.." id="myInput" onkeyup="myFunction()">
+    <table class="table table-hover" id="patient-table">
+        <thead>
+            <tr>
+                <th scope="col" style="font-size: 2rem;">First Name</th>
+                <th scope="col" style="font-size: 2rem;">Last Name</th>
+                <th scope="col" style="font-size: 2rem;">Description</th>
+                <th scope="col" style="font-size: 2rem;"></th>
+                <th scope="col" style="font-size: 2rem;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% include 'web_med/includes/partial_patients_list.html' %}
+        </tbody>
+    </table>
+</div>
+
+
+<div class="modal fade" id="modal-patient">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function myFunction() {
+        var input, filter, table, tr, td, i;
+        input = document.getElementById("myInput");
+        filter = input.value.toUpperCase();
+        table = document.getElementById("patient-table");
+        tr = table.getElementsByTagName("tr");
+        for (i = 0; i < tr.length; i++) {
+            td = tr[i].getElementsByTagName("td")[0];
+            if (td) {
+                if (td.innerHTML.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+</script>
+
+<style>
+    .focus {
+        background-color: #84c0bd;
+        color: #fff;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    /*  
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+    
+    td,
+    th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+    
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+
+    */
+</style>
+
+{% endblock %}
