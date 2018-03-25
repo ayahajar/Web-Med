@@ -10,8 +10,6 @@ import numpy
 import mritopng
 import itk
 import vtk
-import boto3
-import botocore
 from vtk.util import numpy_support
 import json as simplejson
 from django.views import generic
