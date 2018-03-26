@@ -1541,14 +1541,14 @@ def VolumeSegmentation (request, *args, **kwargs):
     global stl_name
     patient_id = kwargs.get('pk', None)
     patient_slug = kwargs.get('slug', None)
- 
+        
     if request.method == 'POST':
               
         LowerThreshold = request.POST.get("LowerThreshold","")
-	UpperThreshold = request.POST.get("UpperThreshold","")
+        UpperThreshold = request.POST.get("UpperThreshold","")
         Name = request.POST.get("Name","")
-	stl_name = Name    	
-	PathDicom = 'media/dicom/%s/' % (patient_id)    
+        stl_name = Name
+        PathDicom = 'media/dicom/%s/' % (patient_id)    
     
     	reader = vtk.vtkDICOMImageReader()
     	reader.SetDirectoryName(PathDicom)
@@ -1562,8 +1562,8 @@ def VolumeSegmentation (request, *args, **kwargs):
     	#Thresholding the data: mask out all non-bone tissue from the image, and create a bone-mask
     	threshold = vtk.vtkImageThreshold ()
     	threshold.SetInputConnection(reader.GetOutputPort())
-    	#threshold.ThresholdByLower(400)  # remove all soft tissue
-    	threshold.ThresholdBetween(-600,-400);
+        #threshold.ThresholdByLower(400)  # remove all soft tissue
+    	threshold.ThresholdBetween(float(LowerThreshold),float(UpperThreshold));
 
         threshold.ReplaceInOn()
         threshold.SetInValue(0)  # set all values below 400 to 0
@@ -1571,31 +1571,31 @@ def VolumeSegmentation (request, *args, **kwargs):
         threshold.SetOutValue(1)  # set all values above 400 to 1
         threshold.Update()
 
-	#Surface Extraction: Marching Cubes
-	dmc = vtk.vtkDiscreteMarchingCubes()
-	dmc.SetInputConnection(threshold.GetOutputPort())
-	dmc.GenerateValues(1, 1, 1)
-	dmc.Update()
+        #Surface Extraction: Marching Cubes
+        dmc = vtk.vtkDiscreteMarchingCubes()
+        dmc.SetInputConnection(threshold.GetOutputPort())
+        dmc.GenerateValues(1, 1, 1)
+        dmc.Update()
 
-	#Exporting the surface as an stl
-	writer = vtk.vtkSTLWriter()
-	writer.SetInputConnection(dmc.GetOutputPort())
-	writer.SetFileTypeToBinary()
-	vtk_patient_path = ('media/stl/%s/') % (patient_id)
-	if not os.path.exists(vtk_patient_path):
-           os.makedirs(vtk_patient_path)
-	vtk_path = ('media/stl/%s/%s.stl') % (patient_id,Name)
-	writer.SetFileName(vtk_path)
-	writer.Write()
+        #Exporting the surface as an stl
+        writer = vtk.vtkSTLWriter()
+        writer.SetInputConnection(dmc.GetOutputPort())
+        writer.SetFileTypeToBinary()
+        vtk_patient_path = ('media/stl/%s/') % (patient_id)
+        if not os.path.exists(vtk_patient_path):
+            os.makedirs(vtk_patient_path)
+        vtk_path = ('media/stl/%s/%s.stl') % (patient_id,Name)
+        writer.SetFileName(vtk_path)
+        writer.Write()
 
-    return HttpResponse() 
+        return HttpResponse() 
 
 
 def vtksegview (request, *args, **kwargs):
    
     patient_id = kwargs.get('pk', None)
     patient_slug = kwargs.get('slug', None)
-      
+    
     vtk_path = 'media/stl/%s/%s.stl' % (patient_id, stl_name)
    
     template_name = 'web_med/vtk.html'  

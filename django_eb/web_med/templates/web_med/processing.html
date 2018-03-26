@@ -11,26 +11,8 @@
 <script src="{% static 'web_med/js/cornerstoneWADOImageLoaderCodecs.js' %}"></script>
 <script src="{% static 'web_med/js/cornerstoneWADOImageLoaderWebWorker.js' %}"></script>
 
-<script src="{% static 'web_med/js/exampleImageIdLoader.js' %}"></script>
-<script src="{% static 'web_med/js/exampleMetaDataProvider.js' %}"></script>
-
-<script src="{{ media_url }}test.js" type="text/javascript"></script>
-<!--
-<script language="javascript">
-    var MEDIA_URL = "{{ MEDIA_URL }}";
-</script>
--->
 <script src="https://sdk.amazonaws.com/js/aws-sdk-2.19.0.min.js"></script>
-<!--
-<script>
-    AWS.config.update({
-        accessKeyId: 'AKIAIKKE2KHD2LLKXHYQ',
-        secretAccessKey: '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'
-    });
-    var s3BucketName = 'mywebmedbucket';
-    var s3RegionName = 'us-east-1';
-</script>
--->
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"> {% endblock %} {% block content %}
 <link type="text/css" rel="stylesheet" href="{% static 'web_med/cornerstone.css' %}">
@@ -43,9 +25,19 @@
     </h4>
 </div>
 
+<div class="title" style="position: static; padding-bottom:50px">
+    <button type="button" class="btn btn-md enjoy-css2" data-toggle="modal" data-target="#readDicomInfo">Read Dicom Image Info</button>
+</div>
+
+<!-- Image loader -->
+<div id="loader" class="overlay" style="display:none">
+    <div id="spinner">
+    </div>
+</div>
+
 <!-- Cornerstone -->
 
-<div class="btn-toolbar" style="position:fixed;right:300px;top:240px">
+<div class="btn-toolbar" style="position:fixed;right:300px;top:330px">
     <div class="btn-group-vertical">
 
         <button type="button" id="OriginalImage" class="btn enjoy-css" style="font-size:16px">Original</button>
@@ -56,7 +48,7 @@
 
         <div class="btn-group">
             <button type="button" class="btn enjoy-css dropdown-toggle" data-toggle="dropdown"><i class="material-icons" style="font-size:35px">navigate_before</i><br><span class="caret"></span>&nbsp;&nbsp;Angle</button>
-            <ul class="dropdown-menu" role="menu">
+            <ul class="dropdown-menu pull-right" role="menu">
                 <div class="btn-group-vertical">
                     <button type="button" id="angle" class="btn enjoy-css2">Measure</button>
                     <button type="button" id="showAngle" class="btn enjoy-css2">Show</button>
@@ -90,27 +82,24 @@
         <div class="btn-group">
             <button type="button" class="btn enjoy-css dropdown-toggle" data-toggle="dropdown"><i class="material-icons" style="font-size:20px">font_download</i><br><br><span class="caret"></span>&nbsp;&nbsp;Seed</button>
             <ul class="dropdown-menu" role="menu">
-                <div class="btn-group-vertical">
+                <div class="btn-group-vertical enjoy-css2">
                     <button type="button" id="seed" class="btn enjoy-css2">Measure</button>
                     <button type="button" id="showSeed" class="btn enjoy-css2">Show</button>
                     <button type="button" id="hideSeed" class="btn enjoy-css2">Hide</button>
                     <button type="button" id="clearLabels" class="btn enjoy-css2">Clear</button>
-                    <li>
-                        <label style="color: black">With Coordinates
-                            <input type="checkbox" id="check-coords" checked>
-                        </label>
-                    </li>
-                    <li>
-                        <label style="color: black">Count up
-                            <input type="checkbox" id="check-countUp" checked>
-                        </label>
-                    </li>
-                    <li>
-                        <label style="color: black">Begin with:
-                            <input type="text" id="f-letter" value="A" maxlength="1" size="1" style="text-transform:uppercase">
-                            <input type="number" id="f-number" value="1" style="width: 3em">
-                        </label>
-                    </li>
+                    <br>
+                    <label style="color: black">Coords&nbsp;&nbsp;
+                        <input type="checkbox" id="check-coords" checked>
+                    </label>
+                    <br><br>
+                    <label style="color: black">Count up&nbsp;&nbsp;
+                        <input type="checkbox" id="check-countUp" checked>
+                    </label>
+                    <br><br>
+                    <label style="color: black">Begin with:
+                        <input type="text" id="f-letter" value="A" maxlength="1" size="1" style="text-transform:uppercase">
+                        <input type="number" id="f-number" value="1" style="width: 3em">
+                    </label>
                 </div>
             </ul>
         </div>
@@ -202,7 +191,7 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="radius_mean">Radius:&nbsp;</label>
-                    <input type="text" id="radius_mean" size="10">
+                    <input type="text" id="radius_mean" size="10" value="1">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="mean()">Apply</button>
@@ -226,7 +215,7 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="radius_median">Radius:&nbsp;</label>
-                    <input type="text" id="radius_median" size="10">
+                    <input type="text" id="radius_median" size="10" value="1">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="median()">Apply</button>
@@ -250,7 +239,7 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="numberOfRepetitions_BinomialBlur">Number Of Repetitions:&nbsp;</label>
-                    <input type="text" id="numberOfRepetitions_BinomialBlur" size="10">
+                    <input type="text" id="numberOfRepetitions_BinomialBlur" size="10" value="5">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="BinomialBlur()">Apply</button>
@@ -274,7 +263,7 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="sigma_RecursiveGaussian">Sigma:&nbsp;</label>
-                    <input type="text" id="sigma_RecursiveGaussian" size="10">
+                    <input type="text" id="sigma_RecursiveGaussian" size="10" value="2">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="RecursiveGaussian()">Apply</button>
@@ -298,13 +287,13 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="numberOfIterations_CurvatureAnisotropicDiffusion">Number Of Iterations:&nbsp;</label>
-                    <input type="text" id="numberOfIterations_CurvatureAnisotropicDiffusion" size="10">
+                    <input type="text" id="numberOfIterations_CurvatureAnisotropicDiffusion" size="10" value="5">
                     <br><br>
                     <label for="timeStep_CurvatureAnisotropicDiffusion">Time Step:&nbsp;</label>
-                    <input type="text" id="timeStep_CurvatureAnisotropicDiffusion" size="10">
+                    <input type="text" id="timeStep_CurvatureAnisotropicDiffusion" size="10" value="0.125">
                     <br><br>
                     <label for="conductance_CurvatureAnisotropicDiffusion">Conductance:&nbsp;</label>
-                    <input type="text" id="conductance_CurvatureAnisotropicDiffusion" size="10">
+                    <input type="text" id="conductance_CurvatureAnisotropicDiffusion" size="10" value="3">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="CurvatureAnisotropicDiffusion()">Apply</button>
@@ -328,10 +317,10 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="numberOfIterations_CurvatureFlow">Number Of Iterations:&nbsp;</label>
-                    <input type="text" id="numberOfIterations_CurvatureFlow" size="10">
+                    <input type="text" id="numberOfIterations_CurvatureFlow" size="10" value="10">
                     <br><br>
                     <label for="timeStep_CurvatureFlow">Time Step:&nbsp;</label>
-                    <input type="text" id="timeStep_CurvatureFlow" size="10">
+                    <input type="text" id="timeStep_CurvatureFlow" size="10" value="0.125">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="CurvatureFlow()">Apply</button>
@@ -355,13 +344,13 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="numberOfIterations_GradientAnisotropicDiffusion">Number Of Iterations:&nbsp;</label>
-                    <input type="text" id="numberOfIterations_GradientAnisotropicDiffusion" size="10">
+                    <input type="text" id="numberOfIterations_GradientAnisotropicDiffusion" size="10" value="5">
                     <br><br>
                     <label for="timeStep_GradientAnisotropicDiffusion">Time Step:&nbsp;</label>
-                    <input type="text" id="timeStep_GradientAnisotropicDiffusion" size="10">
+                    <input type="text" id="timeStep_GradientAnisotropicDiffusion" size="10" value="0.125">
                     <br><br>
                     <label for="conductance_GradientAnisotropicDiffusion">Conductance:&nbsp;</label>
-                    <input type="text" id="conductance_GradientAnisotropicDiffusion" size="10">
+                    <input type="text" id="conductance_GradientAnisotropicDiffusion" size="10" value="2">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="GradientAnisotropicDiffusion()">Apply</button>
@@ -385,7 +374,7 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="radiusValue_BinaryDilate">Radius:&nbsp;</label>
-                    <input type="text" id="radiusValue_BinaryDilate" size="10">
+                    <input type="text" id="radiusValue_BinaryDilate" size="10" value="3">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="BinaryDilate()">Apply</button>
@@ -409,7 +398,7 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="radiusValue_BinaryErode">Radius:&nbsp;</label>
-                    <input type="text" id="radiusValue_BinaryErode" size="10">
+                    <input type="text" id="radiusValue_BinaryErode" size="10" value="3">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="BinaryErode()">Apply</button>
@@ -433,7 +422,7 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="radiusValue_GrayScaleDilate">Radius:&nbsp;</label>
-                    <input type="text" id="radiusValue_GrayScaleDilate" size="10">
+                    <input type="text" id="radiusValue_GrayScaleDilate" size="10" value="3">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="GrayScaleDilate()">Apply</button>
@@ -457,7 +446,7 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="radiusValue_GrayScaleErode">Radius:&nbsp;</label>
-                    <input type="text" id="radiusValue_GrayScaleErode" size="10">
+                    <input type="text" id="radiusValue_GrayScaleErode" size="10" value="3">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="GrayScaleErode()">Apply</button>
@@ -481,13 +470,13 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="variance_CannyEdgeDetection">Variance:&nbsp;</label>
-                    <input type="text" id="variance_CannyEdgeDetection" size="10">
+                    <input type="text" id="variance_CannyEdgeDetection" size="10" value="1.5">
                     <br><br>
                     <label for="lowerThreshold_CannyEdgeDetection">Lower Threshold:&nbsp;</label>
-                    <input type="text" id="lowerThreshold_CannyEdgeDetection" size="10">
+                    <input type="text" id="lowerThreshold_CannyEdgeDetection" size="10" value="20">
                     <br><br>
                     <label for="upperThreshold_CannyEdgeDetection">Upper Threshold:&nbsp;</label>
-                    <input type="text" id="upperThreshold_CannyEdgeDetection" size="10">
+                    <input type="text" id="upperThreshold_CannyEdgeDetection" size="10" value="50">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="CannyEdgeDetection()">Apply</button>
@@ -580,16 +569,16 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="outputMinimum_Sigmoid">Output Minimum:&nbsp;</label>
-                    <input type="text" id="outputMinimum_Sigmoid" size="10">
+                    <input type="text" id="outputMinimum_Sigmoid" size="10" value="30">
                     <br><br>
                     <label for="outputMaximum_Sigmoid">Output Maximum:&nbsp;</label>
-                    <input type="text" id="outputMaximum_Sigmoid" size="10">
+                    <input type="text" id="outputMaximum_Sigmoid" size="10" value="240">
                     <br><br>
                     <label for="alpha_Sigmoid">Alpha:&nbsp;</label>
-                    <input type="text" id="alpha_Sigmoid" size="10">
+                    <input type="text" id="alpha_Sigmoid" size="10" value="10">
                     <br><br>
                     <label for="beta_Sigmoid">Beta:&nbsp;</label>
-                    <input type="text" id="beta_Sigmoid" size="10">
+                    <input type="text" id="beta_Sigmoid" size="10" value="150">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="Sigmoid()">Apply</button>
@@ -613,16 +602,16 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="lowerThreshold_BinaryThreshold">Lower Threshold:&nbsp;</label>
-                    <input type="text" id="lowerThreshold_BinaryThreshold" size="10">
+                    <input type="text" id="lowerThreshold_BinaryThreshold" size="10" value="100">
                     <br><br>
                     <label for="upperThreshold_BinaryThreshold">Upper Threshold:&nbsp;</label>
-                    <input type="text" id="upperThreshold_BinaryThreshold" size="10">
+                    <input type="text" id="upperThreshold_BinaryThreshold" size="10" value="250">
                     <br><br>
                     <label for="outsideValue_BinaryThreshold">Outside Value:&nbsp;</label>
-                    <input type="text" id="outsideValue_BinaryThreshold" size="10">
+                    <input type="text" id="outsideValue_BinaryThreshold" size="10" value="0">
                     <br><br>
                     <label for="insideValue_BinaryThreshold">Inside Value:&nbsp;</label>
-                    <input type="text" id="insideValue_BinaryThreshold" size="10">
+                    <input type="text" id="insideValue_BinaryThreshold" size="10" value="200">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="BinaryThreshold()">Apply</button>
@@ -646,13 +635,13 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="numberOfHistogramBins_OtsuThreshold">Number Of Histogram Bins:&nbsp;</label>
-                    <input type="text" id="numberOfHistogramBins_OtsuThreshold" size="10">
+                    <input type="text" id="numberOfHistogramBins_OtsuThreshold" size="10" value="128">
                     <br><br>
                     <label for="numberOfThresholds_OtsuThreshold">Number Of Thresholds:&nbsp;</label>
-                    <input type="text" id="numberOfThresholds_OtsuThreshold" size="10">
+                    <input type="text" id="numberOfThresholds_OtsuThreshold" size="10" value="1">
                     <br><br>
                     <label for="labelOffset_OtsuThreshold">Label Offset:&nbsp;</label>
-                    <input type="text" id="labelOffset_OtsuThreshold" size="10">
+                    <input type="text" id="labelOffset_OtsuThreshold" size="10" value="0">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="OtsuThreshold()">Apply</button>
@@ -676,10 +665,10 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="lowerThreshold_Threshold">Lower Threshold:&nbsp;</label>
-                    <input type="text" id="lowerThreshold_Threshold" size="10">
+                    <input type="text" id="lowerThreshold_Threshold" size="10" value="100">
                     <br><br>
                     <label for="upperThreshold_Threshold">Upper Threshold:&nbsp;</label>
-                    <input type="text" id="upperThreshold_Threshold" size="10">
+                    <input type="text" id="upperThreshold_Threshold" size="10" value="200">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="Threshold()">Apply</button>
@@ -709,7 +698,7 @@
                     <input type="text" id="PstY_ConfidenceConnected" size="10">
                     <br><br>
                     <label for="iterations_ConfidenceConnected">Number Of Iterations:&nbsp;</label>
-                    <input type="text" id="iterations_ConfidenceConnected" size="10">
+                    <input type="text" id="iterations_ConfidenceConnected" size="10" value="5">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="ConfidenceConnected()">Apply</button>
@@ -733,10 +722,10 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <label for="threshold_Watershed">Threshold Value:&nbsp;</label>
-                    <input type="text" id="threshold_Watershed" size="10">
+                    <input type="text" id="threshold_Watershed" size="10" value="0.002">
                     <br><br>
                     <label for="level_Watershed">Level:&nbsp;</label>
-                    <input type="text" id="level_Watershed" size="10">
+                    <input type="text" id="level_Watershed" size="10" value="0.2">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="Watershed()">Apply</button>
@@ -748,14 +737,39 @@
 </div>
 
 <div style="position:relative;max-width:1000px">
-    <button type="button" class="btn btn-md enjoy-css2" data-toggle="modal" data-target="#readDicomInfo">Read Dicom Image Info</button>
-    <label style="color: black" for="colormaps">Colormap</label>
-    <select id="colormaps" style="width:10%">
-       <option value="">Select...</option>
+    <input id="filename" class="enjoy-css2" type="text" value="{{photo_name_clicked}}.png">
+    <button id="save" type="button" class="btn enjoy-css2"><span class="glyphicon glyphicon-save-file"></span> Save</button>
+    <select id="colormaps" style="width:25%" class="enjoy-css2">
+       <option value="">Select Colormap...</option>
     </select>
-    <button id="save" type="button" class="btn enjoy-css2"><span class="glyphicon glyphicon-save-file"></span> Save Image</button>
-    <input id="filename" style="height:45px;font-size:18px" type="text" value="{{photo_name_clicked}}.png">
-    <button id="fullscreen1" type="button" class="btn btn-md enjoy-css2"><i class="material-icons">zoom_out_map</i></button>
+
+    <div class="btn-group">
+        <button type="button" class="btn enjoy-css2 dropdown-toggle" style="width:220px" data-toggle="dropdown">Coloring Tool&nbsp;&nbsp;&nbsp;<span class="caret"></span></button>
+        <ul class="dropdown-menu" role="menu">
+            <div class="btn-group-vertical enjoy-css2">
+                <select id="toolType" style="width:100%" class="enjoy-css2">
+                    <option value="Select">Select</option>
+                    <option value="brush">Default</option>
+                    <option value="adaptiveBrush">Adaptive</option>
+                </select>
+                <br><br>
+                <label for="radiusSlider" style="color:black">Radius: <span id="valBox">0</span> px</label>
+                <input autocomplete="off" id="radiusSlider" type="range" min="0" max="20" value="0" steps="1" style="width:150px" />
+                <br>
+                <button id="drawErase" type="button" class="btn enjoy-css2">Erase</button>
+            </div>
+        </ul>
+    </div>
+
+    <!--
+    
+
+    <label for="toolType" style="color:black">Type:</label>
+    
+                    
+
+-->
+    <button id="fullscreen1" type="button" class="btn btn-md enjoy-css2" style="position: absolute;bottom:0;right:0">Full Screen&nbsp;&nbsp;<i class="material-icons" style="vertical-align: middle;">zoom_out_map</i></button>
 </div>
 
 <div style="position:relative;max-width:1000px;height:800px;background-color:black" class="cornerstone-enabled-image imageViewerViewport" oncontextmenu="return false" unselectable="on" onselectstart="return false;" onmousedown="return false;">
@@ -768,14 +782,15 @@
         <div id="WWWCText">WW/WC:</div>
     </div>
 </div>
-
-<div style="padding-top:20px; padding-bottom: 20px; font-size: 20px;"><span id="coords" style="color:black;background-color:white;"></span></div>
+<br>
+<div style="padding-top:20px; padding-bottom: 20px; font-size: 20px;"><span id="coords" style="color:white; background: rgb(75, 75, 75);border: 2px solid #337ab7;padding-top:15px; padding-bottom:15px; padding-right:15px; padding-left:15px;"></span></div>
+<br>
+<br>
 
 <!-- ITK -->
-
 <div style="position:relative;max-width:1000px">
     <p style="color:white;font-size:20px">Processing Tools</p>
-    <div class="btn-toolbar" style="position:relative;max-width:1000px">
+    <div class="btn-toolbar" style="position:relative;max-width:1000px;padding-left:7px">
         <div class="btn-group-vertical">
 
             <div class="btn-group btn-group-justified">
@@ -783,29 +798,35 @@
                 <div class="btn-group">
                     <button type="button" class="btn enjoy-css2 dropdown-toggle" data-toggle="dropdown">Linear Image Denoising<span class="caret"></span></button>
                     <ul class="dropdown-menu" role="menu">
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#Mean">Mean</button>
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#Median">Median</button>
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#BinomialBlur">Binomial Blur</button>
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#RecursiveGaussian">Recursive Gaussian</button>
+                        <div class="btn-group-vertical" style="width:300px">
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#Mean">Mean</button>
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#Median">Median</button>
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#BinomialBlur">Binomial Blur</button>
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#RecursiveGaussian">Recursive Gaussian</button>
+                        </div>
                     </ul>
                 </div>
 
                 <div class="btn-group">
                     <button type="button" class="btn enjoy-css2 dropdown-toggle" data-toggle="dropdown">Non-Linear Image Denoising<span class="caret"></span></button>
                     <ul class="dropdown-menu" role="menu">
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#CurvatureAnisotropicDiffusion">Curvature Anisotropic Diffusion</button>
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#CurvatureFlow">Curvature Flow</button>
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#GradientAnisotropicDiffusion">Gradient Anisotropic Diffusion</button>
+                        <div class="btn-group-vertical" style="width:300px">
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#CurvatureAnisotropicDiffusion">Curvature Anisotropic Diffusion</button>
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#CurvatureFlow">Curvature Flow</button>
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#GradientAnisotropicDiffusion">Gradient Anisotropic Diffusion</button>
+                        </div>
                     </ul>
                 </div>
 
                 <div class="btn-group">
                     <button type="button" class="btn enjoy-css2 dropdown-toggle" data-toggle="dropdown">Image Morphology<span class="caret"></span></button>
                     <ul class="dropdown-menu" role="menu">
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#BinaryDilate">Binary Dilate</button>
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#BinaryErode">Binary Erode</button>
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#GrayScaleDilate">GrayScale Dilate</button>
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#GrayScaleErode">GrayScale Erode</button>
+                        <div class="btn-group-vertical" style="width:300px">
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#BinaryDilate">Binary Dilate</button>
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#BinaryErode">Binary Erode</button>
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#GrayScaleDilate">GrayScale Dilate</button>
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#GrayScaleErode">GrayScale Erode</button>
+                        </div>
                     </ul>
                 </div>
             </div>
@@ -814,19 +835,23 @@
                 <div class="btn-group">
                     <button type="button" class="btn enjoy-css2 dropdown-toggle" data-toggle="dropdown">Edge Detection/Feature Extraction<span class="caret"></span></button>
                     <ul class="dropdown-menu" role="menu">
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#CannyEdgeDetection">CannyEdge Detection</button>
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#SobelEdgeDetection">SobelEdge Detection</button>
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#LaplacianRecursive">Laplacian Recursive Gaussian</button>
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#GradientMagnitude">Gradient Magnitude</button>
-                    </ul>
-                </div>
-                <div class="btn-group">
-                    <button type="button" class="btn enjoy-css2 dropdown-toggle" data-toggle="dropdown">Image Intensity Transformations<span class="caret"></span></button>
-                    <ul class="dropdown-menu" role="menu">
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#Sigmoid">Sigmoid</button>
+                        <div class="btn-group-vertical" style="width:300px">
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#CannyEdgeDetection">CannyEdge Detection</button>
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#SobelEdgeDetection">SobelEdge Detection</button>
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#LaplacianRecursive">Laplacian Recursive Gaussian</button>
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#GradientMagnitude">Gradient Magnitude</button>
+                        </div>
                     </ul>
                 </div>
 
+                <div class="btn-group">
+                    <button type="button" class="btn enjoy-css2 dropdown-toggle" data-toggle="dropdown">Image Intensity Transformations<span class="caret"></span></button>
+                    <ul class="dropdown-menu" role="menu">
+                        <div class="btn-group-vertical" style="width:300px">
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#Sigmoid">Sigmoid</button>
+                        </div>
+                    </ul>
+                </div>
             </div>
 
             <div class="btn-group btn-group-justified">
@@ -834,16 +859,20 @@
                 <div class="btn-group">
                     <button type="button" class="btn enjoy-css2 dropdown-toggle" data-toggle="dropdown">Thresholding<span class="caret"></span></button>
                     <ul class="dropdown-menu" role="menu">
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#OtsuThreshold">Otsu Threshold</button>
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#BinaryThreshold">Binary Threshold</button>
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#Threshold">Threshold</button>
+                        <div class="btn-group-vertical" style="width:300px">
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#OtsuThreshold">Otsu Threshold</button>
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#BinaryThreshold">Binary Threshold</button>
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#Threshold">Threshold</button>
+                        </div>
                     </ul>
                 </div>
 
                 <div class="btn-group">
                     <button type="button" class="btn enjoy-css2 dropdown-toggle" data-toggle="dropdown">Region Growing<span class="caret"></span></button>
                     <ul class="dropdown-menu" role="menu">
-                        <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#ConfidenceConnected">Confidence Connected</button>
+                        <div class="btn-group-vertical" style="width:300px">
+                            <button type="button" class="btn enjoy-css2 btn-md" data-toggle="modal" data-target="#ConfidenceConnected">Confidence Connected</button>
+                        </div>
                     </ul>
                 </div>
 
@@ -852,36 +881,25 @@
                 </div>
 
             </div>
+
         </div>
     </div>
 </div>
-<br><br>
+<br>
+<br>
 <div style="position:relative;max-width:1000px">
-    <button id="save2" type="button" class="btn enjoy-css2"><span class="glyphicon glyphicon-save-file"></span> Save Processed Image</button>
-    <input id="filename2" style="height:45px;font-size:18px" type="text" value="{{photo_name_clicked}}_Processed.png">
-    <button id="fullscreen2" type="button" class="btn btn-md enjoy-css2"><i class="material-icons">zoom_out_map</i></button>
+    <input id="filename2" class="enjoy-css2" type="text" value="{{photo_name_clicked}}_Processed.png">
+    <button id="save2" type="button" class="btn enjoy-css2"><span class="glyphicon glyphicon-save-file"></span> Save </button>
+    <button id="fullscreen2" type="button" class="btn btn-md enjoy-css2" style="position: absolute;bottom:0;right:0">Full Screen&nbsp;&nbsp;<i class="material-icons" style="vertical-align: middle;">zoom_out_map</i></button>
 </div>
 
 <div style="position:relative;max-width:1000px;height:800px;background-color:black" class="cornerstone-enabled-image imageViewerViewport" oncontextmenu="return false" unselectable="on" onselectstart="return false;" onmousedown="return false;">
     <div id="dicomImage2" style="height:100%;width:100%;border-color:337ab7;border-style:double;border-width:1px"></div>
 </div>
 
-<div style="padding-top:20px; padding-bottom: 20px; font-size: 20px"><span id="coords2" style="color:black;background-color:white;"></span></div>
-
-<p style="color:black">Coloring Tool</p>
-
-<div>
-    <label for="toolType" style="color:black">Type:</label>
-    <select id="toolType" style="width:10%">
-            <option value="Select">Select</option>
-            <option value="brush">Default</option>
-            <option value="adaptiveBrush">Adaptive</option>
-    </select> &nbsp;&nbsp;
-    <label for="radiusSlider" style="color:black">Radius: <span id="valBox">0</span> px</label>
-    <input autocomplete="off" id="radiusSlider" type="range" min="0" max="20" value="0" steps="1" style="width:100px" />
-    <br>
-    <button id="drawErase" class="btn btn-primary">Erase</button>
-</div>
+<br>
+<div style="padding-top:20px; padding-bottom: 20px; font-size: 20px"><span id="coords2" style="color:white; background: rgb(75, 75, 75);border: 2px solid #337ab7; padding-top:15px; padding-bottom:15px; padding-right:15px; padding-left:15px;"></span></div>
+<br>
 
 <div class="col-xs-6">
     <dialog class="relabelDialog" oncontextmenu="return false">
@@ -1194,23 +1212,6 @@
 </div>
 
 <script>
-    ///S3 Bucket///
-    /*
-    	window.onload = function() {
-    	  	AWS.config.update({
-    		    "accessKeyId": "AKIAIKKE2KHD2LLKXHYQ",
-    		    "secretAccessKey": "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",
-    		    "region": "us-east-1"
-    		});
-    		var s3 = new AWS.S3();            
-    		var params = {
-    		    Bucket: "mywebmedbucket",
-    		    Delimiter: "/",
-    		    EncodingType: "url"
-    		};
-    	};
-
-    */
     /// Algorithms ///
 
     function mean() {
@@ -1222,6 +1223,10 @@
             data: {
                 csrfmiddlewaretoken: '{{ csrf_token }}',
                 radius_mean: $('#radius_mean').val()
+            },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#Mean').hide();
             },
             success: function(data) {
 
@@ -1235,6 +1240,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#Mean').modal('toggle');
             }
         });
@@ -1250,6 +1256,10 @@
                 csrfmiddlewaretoken: '{{ csrf_token }}',
                 radius_median: $('#radius_median').val()
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#Median').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1262,6 +1272,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#Median').modal('toggle');
             }
         });
@@ -1277,6 +1288,10 @@
                 csrfmiddlewaretoken: '{{ csrf_token }}',
                 numberOfRepetitions_BinomialBlur: $('#numberOfRepetitions_BinomialBlur').val()
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#BinomialBlur').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1289,6 +1304,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#BinomialBlur').modal('toggle');
             }
         });
@@ -1304,6 +1320,10 @@
                 csrfmiddlewaretoken: '{{ csrf_token }}',
                 sigma_RecursiveGaussian: $('#sigma_RecursiveGaussian').val()
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#RecursiveGaussian').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1316,6 +1336,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#RecursiveGaussian').modal('toggle');
             }
         });
@@ -1333,6 +1354,10 @@
                 timeStep_CurvatureAnisotropicDiffusion: $('#timeStep_CurvatureAnisotropicDiffusion').val(),
                 conductance_CurvatureAnisotropicDiffusion: $('#conductance_CurvatureAnisotropicDiffusion').val()
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#CurvatureAnisotropicDiffusion').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1345,6 +1370,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#CurvatureAnisotropicDiffusion').modal('toggle');
             }
         });
@@ -1361,6 +1387,10 @@
                 numberOfIterations_CurvatureFlow: $('#numberOfIterations_CurvatureFlow').val(),
                 timeStep_CurvatureFlow: $('#timeStep_CurvatureFlow').val(),
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#CurvatureFlow').hide();
+            },
             success: function(data) {
                 numberOfIterations_CurvatureFlow
 
@@ -1374,6 +1404,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#CurvatureFlow').modal('toggle');
             }
         });
@@ -1391,6 +1422,10 @@
                 timeStep_GradientAnisotropicDiffusion: $('#timeStep_GradientAnisotropicDiffusion').val(),
                 conductance_GradientAnisotropicDiffusion: $('#conductance_GradientAnisotropicDiffusion').val()
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#GradientAnisotropicDiffusion').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1403,6 +1438,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#GradientAnisotropicDiffusion').modal('toggle');
             }
         });
@@ -1418,6 +1454,10 @@
                 csrfmiddlewaretoken: '{{ csrf_token }}',
                 radiusValue_BinaryDilate: $('#radiusValue_BinaryDilate').val()
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#BinaryDilate').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1430,6 +1470,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#BinaryDilate').modal('toggle');
             }
         });
@@ -1445,6 +1486,10 @@
                 csrfmiddlewaretoken: '{{ csrf_token }}',
                 radiusValue_BinaryErode: $('#radiusValue_BinaryErode').val()
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#BinaryErode').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1457,6 +1502,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#BinaryErode').modal('toggle');
             }
         });
@@ -1472,6 +1518,10 @@
                 csrfmiddlewaretoken: '{{ csrf_token }}',
                 radiusValue_GrayScaleDilate: $('#radiusValue_GrayScaleDilate').val()
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#GrayScaleDilate').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1484,6 +1534,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#GrayScaleDilate').modal('toggle');
             }
         });
@@ -1499,6 +1550,10 @@
                 csrfmiddlewaretoken: '{{ csrf_token }}',
                 radiusValue_GrayScaleErode: $('#radiusValue_GrayScaleErode').val()
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#GrayScaleErode').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1511,6 +1566,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#GrayScaleErode').modal('toggle');
             }
         });
@@ -1528,6 +1584,10 @@
                 lowerThreshold_CannyEdgeDetection: $('#lowerThreshold_CannyEdgeDetection').val(),
                 upperThreshold_CannyEdgeDetection: $('#upperThreshold_CannyEdgeDetection').val()
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#CannyEdgeDetection').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1540,6 +1600,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#CannyEdgeDetection').modal('toggle');
             }
         });
@@ -1554,6 +1615,10 @@
             data: {
                 csrfmiddlewaretoken: '{{ csrf_token }}',
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#SobelEdgeDetection').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1566,6 +1631,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#SobelEdgeDetection').modal('toggle');
             }
         });
@@ -1580,6 +1646,10 @@
             data: {
                 csrfmiddlewaretoken: '{{ csrf_token }}',
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#LaplacianRecursive').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1592,6 +1662,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#LaplacianRecursive').modal('toggle');
             }
         });
@@ -1606,6 +1677,10 @@
             data: {
                 csrfmiddlewaretoken: '{{ csrf_token }}',
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#GradientMagnitude').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1618,6 +1693,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#GradientMagnitude').modal('toggle');
             }
         });
@@ -1635,7 +1711,10 @@
                 outputMaximum_Sigmoid: $('#outputMaximum_Sigmoid').val(),
                 alpha_Sigmoid: $('#alpha_Sigmoid').val(),
                 beta_Sigmoid: $('#beta_Sigmoid').val()
-
+            },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#Sigmoid').hide();
             },
             success: function(data) {
 
@@ -1649,6 +1728,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#Sigmoid').modal('toggle');
             }
         });
@@ -1667,6 +1747,10 @@
                 outsideValue_BinaryThreshold: $('#outsideValue_BinaryThreshold').val(),
                 insideValue_BinaryThreshold: $('#insideValue_BinaryThreshold').val()
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#BinaryThreshold').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1679,6 +1763,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#BinaryThreshold').modal('toggle');
             }
         });
@@ -1696,6 +1781,10 @@
                 numberOfThresholds_OtsuThreshold: $('#numberOfThresholds_OtsuThreshold').val(),
                 labelOffset_OtsuThreshold: $('#labelOffset_OtsuThreshold').val()
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#OtsuThreshold').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1708,6 +1797,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#OtsuThreshold').modal('toggle');
             }
         });
@@ -1724,6 +1814,10 @@
                 lowerThreshold_Threshold: $('#lowerThreshold_Threshold').val(),
                 upperThreshold_Threshold: $('#upperThreshold_Threshold').val()
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#Threshold').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1736,6 +1830,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#Threshold').modal('toggle');
             }
         });
@@ -1752,7 +1847,10 @@
                 PstX_ConfidenceConnected: $('#PstX_ConfidenceConnected').val(),
                 PstY_ConfidenceConnected: $('#PstY_ConfidenceConnected').val(),
                 iterations_ConfidenceConnected: $('#iterations_ConfidenceConnected').val()
-
+            },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#ConfidenceConnected').hide();
             },
             success: function(data) {
 
@@ -1766,6 +1864,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#ConfidenceConnected').modal('toggle');
             }
         });
@@ -1782,6 +1881,10 @@
                 threshold_Watershed: $('#threshold_Watershed').val(),
                 level_Watershed: $('#level_Watershed').val()
             },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#Watershed').hide();
+            },
             success: function(data) {
 
                 var imageId_processed = "wadouri:/" + data;
@@ -1794,6 +1897,7 @@
                     var viewport_processed = cornerstone.getDefaultViewportForImage(element_processed, image);
                     cornerstone.displayImage(element_processed, image, viewport_processed);
                 });
+                $('#loader').hide();
                 $('#Watershed').modal('toggle');
             }
         });
@@ -1840,62 +1944,62 @@
         document.getElementById('statusText').innerHTML = 'Status: Loading file, please wait..';
 
         //XMLHttpRequest
-        
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', '/{{photo_dcm_path}}', true);
-                xhr.responseType = 'arraybuffer';
 
-                xhr.onload = function(e) {
-                    // Here we have the file data as an ArrayBuffer.
-                    //dicomParser requires as input a Uint8Array so we create that here
-                    var byteArray = new Uint8Array(this.response);
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/{{photo_dcm_path}}', true);
+        xhr.responseType = 'arraybuffer';
 
-                    var kb = byteArray.length / 1024;
-                    var mb = kb / 1024;
-                    var byteStr = mb > 1 ? mb.toFixed(3) + " MB " : kb.toFixed(0) + " KB ";
-                    document.getElementById('statusText').innerHTML = '<span class="glyphicon glyphicon-cog"></span>Status: Parsing ' + byteStr + ' bytes, please wait..';
+        xhr.onload = function(e) {
+            // Here we have the file data as an ArrayBuffer.
+            //dicomParser requires as input a Uint8Array so we create that here
+            var byteArray = new Uint8Array(this.response);
 
-                    // set a short timeout to do the parse so the DOM has time to update itself with the above message
-                    setTimeout(function() {
+            var kb = byteArray.length / 1024;
+            var mb = kb / 1024;
+            var byteStr = mb > 1 ? mb.toFixed(3) + " MB " : kb.toFixed(0) + " KB ";
+            document.getElementById('statusText').innerHTML = '<span class="glyphicon glyphicon-cog"></span>Status: Parsing ' + byteStr + ' bytes, please wait..';
 
-                        var dataSet;
-                        // Invoke the paresDicom function and get back a DataSet object with the contents
-                        try {
-                            var start = new Date().getTime();
+            // set a short timeout to do the parse so the DOM has time to update itself with the above message
+            setTimeout(function() {
 
-                            dataSet = dicomParser.parseDicom(byteArray);
-                            // Here we call dumpDataSet to update the DOM with the contents of the dataSet
-                            dumpDataSet(dataSet);
+                var dataSet;
+                // Invoke the paresDicom function and get back a DataSet object with the contents
+                try {
+                    var start = new Date().getTime();
 
-                            var end = new Date().getTime();
-                            var time = end - start;
-                            if (dataSet.warnings.length > 0) {
-                                $('#status').removeClass('alert-success alert-info alert-danger').addClass('alert-warning');
-                                $('#statusText').html('Status: Warnings encountered while parsing file (file of size ' + byteStr + ' parsed in ' + time + 'ms)');
+                    dataSet = dicomParser.parseDicom(byteArray);
+                    // Here we call dumpDataSet to update the DOM with the contents of the dataSet
+                    dumpDataSet(dataSet);
 
-                                dataSet.warnings.forEach(function(warning) {
-                                    $("#warnings").append('<li>' + warning + '</li>');
-                                });
-                            } else {
-                                var pixelData = dataSet.elements.x7fe00010;
-                                if (pixelData) {
-                                    $('#status').removeClass('alert-warning alert-info alert-danger').addClass('alert-success');
-                                    $('#statusText').html('Status: Ready (file of size ' + byteStr + ' parsed in ' + time + 'ms)');
-                                } else {
-                                    $('#status').removeClass('alert-warning alert-info alert-danger').addClass('alert-success');
-                                    $('#statusText').html('Status: Ready - no pixel data found (file of size ' + byteStr + ' parsed in ' + time + 'ms)');
-                                }
-                            }
-                        } catch (err) {
-                            $('#status').removeClass('alert-success alert-info alert-warning').addClass('alert-danger');
-                            document.getElementById('statusText').innerHTML = 'Status: Error - ' + err + ' (file of size ' + byteStr + ' )';
+                    var end = new Date().getTime();
+                    var time = end - start;
+                    if (dataSet.warnings.length > 0) {
+                        $('#status').removeClass('alert-success alert-info alert-danger').addClass('alert-warning');
+                        $('#statusText').html('Status: Warnings encountered while parsing file (file of size ' + byteStr + ' parsed in ' + time + 'ms)');
+
+                        dataSet.warnings.forEach(function(warning) {
+                            $("#warnings").append('<li>' + warning + '</li>');
+                        });
+                    } else {
+                        var pixelData = dataSet.elements.x7fe00010;
+                        if (pixelData) {
+                            $('#status').removeClass('alert-warning alert-info alert-danger').addClass('alert-success');
+                            $('#statusText').html('Status: Ready (file of size ' + byteStr + ' parsed in ' + time + 'ms)');
+                        } else {
+                            $('#status').removeClass('alert-warning alert-info alert-danger').addClass('alert-success');
+                            $('#statusText').html('Status: Ready - no pixel data found (file of size ' + byteStr + ' parsed in ' + time + 'ms)');
                         }
+                    }
+                } catch (err) {
+                    $('#status').removeClass('alert-success alert-info alert-warning').addClass('alert-danger');
+                    document.getElementById('statusText').innerHTML = 'Status: Error - ' + err + ' (file of size ' + byteStr + ' )';
+                }
 
-                    }, 30);
-                };
+            }, 30);
+        };
 
-                xhr.send();
-        
+        xhr.send();
+
         var element = document.getElementById('dicomImage');
 
 
@@ -2659,7 +2763,7 @@
 <style>
     .dropdown-menu {
         min-width: 100px;
-        padding: 1px 0;
+        padding: 0px 0;
     }
     
     .modal-dialog {
@@ -2814,6 +2918,72 @@
         border-style: solid;
         border-width: 1px;
         border-color: lightgray;
+    }
+    
+    .overlay {
+        height: 100%;
+        width: 100%;
+        display: none;
+        position: fixed;
+        z-index: 1;
+        top: 0;
+        left: 0;
+        background-color: rgb(0, 0, 0);
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+    
+    .overlay-content {
+        position: relative;
+        top: 25%;
+        width: 100%;
+        text-align: center;
+        margin-top: 30px;
+    }
+    
+    @media screen and (max-height: 450px) {
+        .overlay a {
+            font-size: 20px
+        }
+        .overlay .closebtn {
+            font-size: 40px;
+            top: 15px;
+            right: 35px;
+        }
+    }
+    
+    #spinner {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        z-index: 1;
+        width: 150px;
+        height: 150px;
+        margin: -75px 0 0 -75px;
+        border: 16px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 16px solid #3498db;
+        width: 120px;
+        height: 120px;
+        -webkit-animation: spin 2s linear infinite;
+        animation: spin 2s linear infinite;
+    }
+    
+    @-webkit-keyframes spin {
+        0% {
+            -webkit-transform: rotate(0deg);
+        }
+        100% {
+            -webkit-transform: rotate(360deg);
+        }
+    }
+    
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
     }
 </style>
 {% endblock %}

@@ -31,6 +31,12 @@
     <button type="button" class="btn btn-primary" id="VolumeSeg" data-toggle="modal" data-target="#VTKSeg">Volume Segmentation</button>
 </p>
 
+<!-- Image loader -->
+<div id="loader" class="overlay" style="display:none">
+    <div id="spinner">
+    </div>
+</div>
+
 <table id="gallery" class="table table-bordered">
     <tbody>
         {% for photo in photos %}
@@ -107,7 +113,7 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">Volume Segmentation</h2>
+                <h2 class="modal-title" title="Threshold based on the Hounsfield scale of tissue density&#10;-1000 to +1000HU&#10;Air:  -1000 HU&#10;Water:  0 HU" data-toggle="tooltip">Volume Segmentation</h2>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -122,11 +128,11 @@
                     <input type="text" id="UpperThreshold" size="10">
                     <br><br>
                     <label for="">Name:&nbsp;</label>
-                    <input type="text" id="Name" size="10" value="Bones">
+                    <input type="text" id="Name" size="10" value="">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-warning" onclick="VolumeSegmentation()">Apply</button>
-		    <button type="button" class="btn btn-primary" onclick="VTKSegView()">View</button>
+                    <button type="button" class="btn btn-primary" onclick="VTKSegView()">View</button>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                 </div>
             </form>
@@ -135,10 +141,9 @@
 </div>
 
 <script>
-
-    function VTKSegView() { 
-
-        window.location = "{% url 'web_med:vtksegview' pk=pi slug=ps %}" ;
+    function VTKSegView() {
+        window.open("{% url 'web_med:vtksegview' pk=pi slug=ps %}", "_blank");
+        $('#VTKSeg').modal('toggle');
 
     }
 
@@ -153,6 +158,14 @@
                 LowerThreshold: $('#LowerThreshold').val(),
                 UpperThreshold: $('#UpperThreshold').val(),
                 Name: $('#Name').val()
+            },
+            beforeSend: function() {
+                $('#loader').show();
+                $('#VTKSeg').hide();
+            },
+            success: function() {
+                $('#loader').hide();
+                $('#VTKSeg').show();
             }
         });
     }
@@ -169,6 +182,72 @@
     @media(max-width: 768px) {
         .modal-dialog {
             min-height: calc(100vh - 20px);
+        }
+    }
+    
+    .overlay {
+        height: 100%;
+        width: 100%;
+        display: none;
+        position: fixed;
+        z-index: 1;
+        top: 0;
+        left: 0;
+        background-color: rgb(0, 0, 0);
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+    
+    .overlay-content {
+        position: relative;
+        top: 25%;
+        width: 100%;
+        text-align: center;
+        margin-top: 30px;
+    }
+    
+    @media screen and (max-height: 450px) {
+        .overlay a {
+            font-size: 20px
+        }
+        .overlay .closebtn {
+            font-size: 40px;
+            top: 15px;
+            right: 35px;
+        }
+    }
+    
+    #spinner {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        z-index: 1;
+        width: 150px;
+        height: 150px;
+        margin: -75px 0 0 -75px;
+        border: 16px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 16px solid #3498db;
+        width: 120px;
+        height: 120px;
+        -webkit-animation: spin 2s linear infinite;
+        animation: spin 2s linear infinite;
+    }
+    
+    @-webkit-keyframes spin {
+        0% {
+            -webkit-transform: rotate(0deg);
+        }
+        100% {
+            -webkit-transform: rotate(360deg);
+        }
+    }
+    
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
         }
     }
 </style>

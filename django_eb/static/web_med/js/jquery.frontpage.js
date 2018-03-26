@@ -355,8 +355,8 @@ function selectfiles(files) {
 
     // now switch to the viewer
     switchToViewer();
-
-    // .. and start the file reading
+    console.log(files)
+        // .. and start the file reading
     read(files);
 };
 
