@@ -39,6 +39,14 @@
     </div>
 </div>
 
+<form method="post" action="{% url 'web_med:clear_files' pi ps %}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.path }}">
+    <button type="submit" class="btn btn-danger pull-right">
+        <span class="glyphicon glyphicon-trash"></span> Clear All Dicom Files
+    </button>
+</form>
+
 <table id="gallery" class="table table-bordered">
     <tbody>
         {% for photo in photos %}

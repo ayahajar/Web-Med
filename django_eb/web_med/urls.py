@@ -34,7 +34,7 @@ urlpatterns = [
     ############ Patient ############
     url(r'^patients/$', views.patients_list, name='patients'),
     url(r'^patients/add/$', views.patientadd, name='patient-add'),
-    url(r'^patients/(?P<pk>[0-9]+)/(?P<slug>[\w-]+)$', views.DetailView.as_view(), name='patient_detail'),
+    url(r'^patients/(?P<pk>[0-9]+)/(?P<slug>[\w-]+)$', views.patientdetail, name='patient_detail'),
     url(r'^patients/(?P<pk>[0-9]+)/(?P<slug>[\w-]+)/update/$', views.patientupdate, name='patient-update'),    
     url(r'^patients/(?P<pk>[0-9]+)/(?P<slug>[\w-]+)/delete/$', views.patientdelete, name='patient-delete'),
 

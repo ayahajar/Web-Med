@@ -30,9 +30,21 @@ $(function() {
                     '<td>' + data.result.name + '</td>' +
                     '</tr>'
                 );
-                $("#gallery tbody").append(
-                    newRow
-                )
+                if (data.result.type = "dcm") {
+                    $("#gallery tbody").append(
+                        newRow
+                    );
+                }
+                if (data.result.type = "nii") {
+                    $("#gallery_nii tbody").append(
+                        newRow
+                    );
+                }
+                if (data.result.type = "vtk") {
+                    $("#gallery_vtk tbody").append(
+                        newRow
+                    );
+                }
             }
         },
     });

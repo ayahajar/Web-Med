@@ -166,57 +166,114 @@ def patientdelete(request, *args, **kwargs):
         )
     return JsonResponse(data)
 
+'''
 class DetailView(LoginRequiredMixin, generic.DetailView):
     model = Patient
     template_name = 'web_med/detail.html'
     #login_url = '/web_med/login'
     #redirect_field_name = 'web_med/login'
-
+'''
+def patientdetail(request, *args, **kwargs):
+    patient_id = kwargs.get('pk', None)
+    patient_slug = kwargs.get('slug', None)        
+    pat = get_object_or_404(Patient, pk=patient_id)
+    photos_list = Photo.objects.all().filter(patient=pat)
+    nii_list = Nii.objects.all().filter(patient=pat)
+    vtk_list = VTK.objects.all().filter(patient=pat)
+    return render(request, 'web_med/detail.html', {
+        'patient': pat,
+        'pi': patient_id,
+        'ps': patient_slug,
+        'photos': photos_list,
+        'niis': nii_list,
+        'vtks': vtk_list
+    })
 
 ############ Photo ############
 
 class ProgressBarUploadView(View):
-    
+    '''
     def get(self, request, *args, **kwargs):
         patient_id = self.kwargs.get('pk', None)
         patient_slug = self.kwargs.get('slug', None)        
         pat = get_object_or_404(Patient, pk=patient_id)
         photos_list = Photo.objects.all().filter(patient=pat)
         return render(self.request, 'web_med/progress_bar_upload/index.html', {'patient': pat, 'pi': patient_id, 'ps': patient_slug, 'photos': photos_list})
-
+    '''
     def post(self, request, *args, **kwargs):        
-        form = PhotoForm(self.request.POST, self.request.FILES)
-        if form.is_valid():
-            # Photo Object
-            photo = Photo(file=request.FILES['file'])
-            patient_id = self.kwargs.get('pk', None)
-            photo.patient = get_object_or_404(Patient, pk=patient_id)
-            photo.save()
-            photo_name = photo.get_file_name()
-            photo_name2 = photo.get_file_name_withoutExtension()
-            photo_path = 'media/dicom/%s/%s' % (patient_id, photo_name)
-            photo_path21 = 'media/png/%s' % (patient_id)
-            photo_path22 = 'media/png/%s/%s.png' % (patient_id, photo_name2)
-                
-            # Converting         
-            if not os.path.exists(photo_path21):
-                os.makedirs(photo_path21)
+        
+        uploaded_file = request.FILES['file'].name           
+        uploaded_file_str = str(uploaded_file)
+        extension = uploaded_file_str.split(".")[-1]
+        
+        if extension == 'dcm':
+        
+            form = PhotoForm(self.request.POST, self.request.FILES)
+            if form.is_valid():
+                # Photo Object
+                photo = Photo(file=request.FILES['file'])
+                patient_id = self.kwargs.get('pk', None)
+                photo.patient = get_object_or_404(Patient, pk=patient_id)
+                photo.save()
+                photo_name = photo.get_file_name()
+                photo_name2 = photo.get_file_name_withoutExtension()
+                photo_path = 'media/dicom/%s/%s' % (patient_id, photo_name)
+                photo_path21 = 'media/png/%s' % (patient_id)
+                photo_path22 = 'media/png/%s/%s.png' % (patient_id, photo_name2)
+                    
+                # Converting         
+                if not os.path.exists(photo_path21):
+                    os.makedirs(photo_path21)
 
-            if not os.path.exists(photo_path22):
-                mritopng.convert_file(photo_path, photo_path22)
-            
-	    # Photopng Object
-            photopng = Photopng()
-            photopng.patient = get_object_or_404(Patient, pk=patient_id)
-            photopng.image = photo_path22
-            photopng.save()
-            
-            data = {'is_valid': True, 'name': photo_name, 'url': photo.file.url}
-        else:
-            data = {'is_valid': False}
-        return JsonResponse(data)
+                if not os.path.exists(photo_path22):
+                    mritopng.convert_file(photo_path, photo_path22)
+                
+            # Photopng Object
+                photopng = Photopng()
+                photopng.patient = get_object_or_404(Patient, pk=patient_id)
+                photopng.image = photo_path22
+                photopng.save()
+                
+                data = {'is_valid': True, 'name': photo_name, 'url': photo.file.url, 'type':extension}
+            else:
+                data = {'is_valid': False}
+            return JsonResponse(data)
+
+        elif extension == 'nii':
+            form = NiiForm(self.request.POST, self.request.FILES)
+            if form.is_valid():
+                # Nii Object
+                nii = Nii(file=request.FILES['file'])
+                patient_id = self.kwargs.get('pk', None)
+                nii.patient = get_object_or_404(Patient, pk=patient_id)
+                nii.save()
+                
+                nii_name = nii.get_file_name()
+                
+                data = {'is_valid': True, 'name': nii_name, 'url': nii.file.url, 'type':extension}
+            else:
+                data = {'is_valid': False}
+            return JsonResponse(data)
+
+        elif extension == 'vtk':  
+            form = VTKForm(self.request.POST, self.request.FILES)
+            if form.is_valid():
+                # VTK Object
+                vtk = VTK(file=request.FILES['file'])
+                patient_id = self.kwargs.get('pk', None)
+                vtk.patient = get_object_or_404(Patient, pk=patient_id)
+                vtk.save()
+                
+                vtk_name = vtk.get_file_name()
+                
+                data = {'is_valid': True, 'name': vtk_name, 'url': vtk.file.url , 'type':extension}
+            else:
+                data = {'is_valid': False}
+            return JsonResponse(data)
+                       
 
 class DragAndDropUploadView(View):
+    
     def get(self, request, *args, **kwargs):
         patient_id = self.kwargs.get('pk', None)
         patient_slug = self.kwargs.get('slug', None)        
@@ -254,13 +311,14 @@ class DragAndDropUploadView(View):
         return JsonResponse(data)
 
 class DragAndDropUploadViewNii(View):
+    '''
     def get(self, request, *args, **kwargs):
         patient_id = self.kwargs.get('pk', None)
         patient_slug = self.kwargs.get('slug', None)        
         pat = get_object_or_404(Patient, pk=patient_id)
         nii_list = Nii.objects.all().filter(patient=pat)
         return render(self.request, 'web_med/drag_and_drop_upload/index_nii.html', {'patient': pat, 'pi': patient_id, 'ps': patient_slug, 'niis': nii_list})
-
+    '''
     def post(self, request, *args, **kwargs):
         form = NiiForm(self.request.POST, self.request.FILES)
         if form.is_valid():
@@ -278,13 +336,14 @@ class DragAndDropUploadViewNii(View):
         return JsonResponse(data)
 
 class DragAndDropUploadViewVTK(View):
+    '''
     def get(self, request, *args, **kwargs):
         patient_id = self.kwargs.get('pk', None)
         patient_slug = self.kwargs.get('slug', None)        
         pat = get_object_or_404(Patient, pk=patient_id)
         vtk_list = VTK.objects.all().filter(patient=pat)
         return render(self.request, 'web_med/drag_and_drop_upload/index_vtk.html', {'patient': pat, 'pi': patient_id, 'ps': patient_slug, 'vtks': vtk_list})
-
+    '''
     def post(self, request, *args, **kwargs):
         form = VTKForm(self.request.POST, self.request.FILES)
         if form.is_valid():

@@ -1,79 +1,421 @@
-{% extends 'web_med/base.html' %} {% block title %}Patient Details{% endblock %} {% block content %}
+{% extends 'web_med/base.html' %} {% load static %} {% block title %}Patient Details{% endblock %} {% block javascript %} {# JQUERY FILE UPLOAD SCRIPTS #}
+<script src="{% static 'web_med/js/jquery-file-upload/vendor/jquery.ui.widget.js' %}"></script>
+<script src="{% static 'web_med/js/jquery-file-upload/jquery.iframe-transport.js' %}"></script>
+<script src="{% static 'web_med/js/jquery-file-upload/jquery.fileupload.js' %}"></script>
+{# PHOTOS PAGE SCRIPTS #}
+<script type="text/javascript" src="{% static 'web_med/js/extra.js' %}"></script>
+{% endblock %} {% block content %}
 <p>
     <h1>Patient: {{patient.firstName}}{{ " " }}{{ patient.lastName }}</h1>
 </p>
 
 <ul class="nav nav-tabs" style="padding-top: 30px">
-    <li class="active"><a style="font-size: 2rem;" data-toggle="tab" href="#home">Upload DICOM files</a></li>
-    <li><a style="font-size: 2rem;" data-toggle="tab" href="#menu1">Upload nii files</a></li>
-    <li><a style="font-size: 2rem;" data-toggle="tab" href="#menu2">Upload VTK files</a></li>
+    <li class="active"><a style="font-size: 2rem;" data-toggle="tab" href="#home">DICOM files Viewer&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</a></li>
+    <li><a style="font-size: 2rem;" data-toggle="tab" href="#menu1">nii files Viewer&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</a></li>
+    <li><a style="font-size: 2rem;" data-toggle="tab" href="#menu2">VTK files Viewer&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</a></li>
 </ul>
 
 <div class="tab-content">
     <div id="home" class="tab-pane fade in active">
-
-        <form method="post" action="{% url 'web_med:clear_files' patient.id patient.slug %}">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="{{ request.path }}">
-            <button type="submit" class="btn btn-danger pull-right">
-            <span class="glyphicon glyphicon-trash"></span> Clear All Dicom Files
-        </button>
-        </form>
-
-        <div class="row">
-            <div class="col-md-3">
-                <div class="panel panel-primary">
-                    <a style="font-size: 1.6rem;" href="{% url 'web_med:drag_and_drop_upload' patient.id patient.slug %}" class="list-group-item{% if request.path == '/web_med/drag-and-drop-upload/' %} active{% endif %}">Drag and Drop Upload</a>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="panel panel-primary">
-                    <a style="font-size: 1.6rem;" href="{% url 'web_med:progress_bar_upload' patient.id patient.slug %}" class="list-group-item{% if request.path == '/web_med/progress-bar-upload/' %} active{% endif %}">Progress Bar Upload</a>
-                </div>
-            </div>
-
+        <br><br><br>
+        <div style="margin-bottom: 20px;">
+            <button type="button" class="btn btn-lg btn-primary js-upload-photos" style="width:1140px">
+                <span class="glyphicon glyphicon-cloud-upload"></span> Upload Dicom Files
+            </button>
+            <input id="fileupload" type="file" name="file" multiple style="display: none;" data-url="{% url 'web_med:progress_bar_upload' pi ps %}" data-form-data='{"csrfmiddlewaretoken": "{{ csrf_token }}"}'>
         </div>
-        {% block photos_contentsss %} {% endblock %}
 
+        <br>
+        <!--
+        <p>
+            <a href="{% url 'web_med:SliceDrop' pi ps %}">SliceDrop</a>
+        </p>
+        -->
+        <p>
+            <a href="{% url 'web_med:l15-process' pi ps %}">
+                <button type="button" class="btn btn-success" style="font-size:20px">View Rendered 3D Volume</button>
+            </a>
+        </p>
+        <p>
+            <button type="button" class="btn btn-success" style="font-size:20px" id="VolumeSeg" data-toggle="modal" data-target="#VTKSeg">Volume Segmentation &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</button>
+        </p>
+
+        <!-- Image loader -->
+        <div id="loader" class="overlay" style="display:none">
+            <div id="spinner">
+            </div>
+        </div>
+        <br>
+        <div>
+            <div style="font-size: 2.2rem;display:inline-block">
+                <b><u>Uploaded Files:</u></b>
+            </div>
+            <div style="display:inline-block;" class="pull-right">
+                <form method="post" action="{% url 'web_med:clear_files' pi ps %}" style="display:inline-block;margin-bottom:0px;">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="btn btn-lg btn-danger pull-right">
+                    <span class="glyphicon glyphicon-trash"></span> Clear All Dicom Files
+                </button>
+                </form>
+            </div>
+        </div>
+        <br><br>
+        <table id="gallery" class="table table-bordered">
+            <tbody>
+                {% for photo in photos %}
+                <tr>
+                    <td style="font-size: 2rem">
+                        {{ photo.get_file_name }}
+                    </td>
+                    <td>
+                        <button type=" button" class="openImageDialog btn btn-primary btn-lg" data-id="/media/png/{{pi}}/{{photo.get_file_name_withoutExtension}}.png" data-toggle="modal" href="#myModal">Quick View</button>
+
+                        <!-- Modal -->
+                        <div class="modal fade" id="myModal" role="dialog">
+                            <div class="modal-dialog" role="document">
+                                <!-- Modal Content -->
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                        <h4 class="modal-title"><b>Quick View</b></h4>
+                                    </div>
+                                    <div class="modal-body">
+                                        <img id="myImage" class="img-responsive" src=" " alt style="width:700px;">
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                        <script>
+                            $(document).on("click", ".openImageDialog", function() {
+                                console.log('Ok');
+                            });
+
+                            $(document).on("click", ".openImageDialog", function() {
+                                var myImageId = $(this).data('id');
+                            });
+
+                            $(document).on("click", ".openImageDialog", function() {
+                                var myImageId = $(this).data('id');
+                                $(".modal-body #myImage").attr("src", myImageId);
+                            });
+                        </script>
+
+
+                    </td>
+                    <td>
+                        <a class="btn btn-warning btn-lg" href="{% url 'web_med:dicom-process' pk=pi slug=ps name=photo.get_file_name_withoutExtension %}">
+                            <span class="glyphicon glyphicon-pencil"></span>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="modal fade" id="modal-progress" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Uploading...</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: 0%;">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="modal fade" id="VTKSeg" tabindex="-1" role="dialog" aria-labelledby="Volume Segmentation" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title" title="Threshold based on the Hounsfield scale of tissue density&#10;-1000 to +1000HU&#10;Air:  -1000 HU&#10;Water:  0 HU" data-toggle="tooltip">Volume Segmentation</h2>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    </div>
+                    <form method="POST">
+                        <div class="modal-body">
+                            {% csrf_token %}
+                            <label for="">Lower Threshold:&nbsp;</label>
+                            <input type="text" id="LowerThreshold" size="10">
+                            <br><br>
+                            <label for="">Upper Threshold:&nbsp;</label>
+                            <input type="text" id="UpperThreshold" size="10">
+                            <br><br>
+                            <label for="">Name:&nbsp;</label>
+                            <input type="text" id="Name" size="10" value="">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-warning" onclick="VolumeSegmentation()">Apply</button>
+                            <button type="button" class="btn btn-primary" onclick="VTKSegView()">View</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function VTKSegView() {
+                window.open("{% url 'web_med:vtksegview' pk=pi slug=ps %}", "_blank");
+                $('#VTKSeg').modal('toggle');
+
+            }
+
+            function VolumeSegmentation() {
+
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'web_med:VolumeSegmentation' pi ps %}",
+                    async: true,
+                    data: {
+                        csrfmiddlewaretoken: '{{ csrf_token }}',
+                        LowerThreshold: $('#LowerThreshold').val(),
+                        UpperThreshold: $('#UpperThreshold').val(),
+                        Name: $('#Name').val()
+                    },
+                    beforeSend: function() {
+                        $('#loader').show();
+                        $('#VTKSeg').hide();
+                    },
+                    success: function() {
+                        $('#loader').hide();
+                        $('#VTKSeg').show();
+                    }
+                });
+            }
+        </script>
+        <style>
+            .modal-dialog {
+                min-height: calc(100vh - 60px);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                overflow: auto;
+            }
+            
+            @media(max-width: 768px) {
+                .modal-dialog {
+                    min-height: calc(100vh - 20px);
+                }
+            }
+            
+            .overlay {
+                height: 100%;
+                width: 100%;
+                display: none;
+                position: fixed;
+                z-index: 1;
+                top: 0;
+                left: 0;
+                background-color: rgb(0, 0, 0);
+                background-color: rgba(0, 0, 0, 0.8);
+            }
+            
+            .overlay-content {
+                position: relative;
+                top: 25%;
+                width: 100%;
+                text-align: center;
+                margin-top: 30px;
+            }
+            
+            @media screen and (max-height: 450px) {
+                .overlay a {
+                    font-size: 20px
+                }
+                .overlay .closebtn {
+                    font-size: 40px;
+                    top: 15px;
+                    right: 35px;
+                }
+            }
+            
+            #spinner {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                z-index: 1;
+                width: 150px;
+                height: 150px;
+                margin: -75px 0 0 -75px;
+                border: 16px solid #f3f3f3;
+                border-radius: 50%;
+                border-top: 16px solid #3498db;
+                width: 120px;
+                height: 120px;
+                -webkit-animation: spin 2s linear infinite;
+                animation: spin 2s linear infinite;
+            }
+            
+            @-webkit-keyframes spin {
+                0% {
+                    -webkit-transform: rotate(0deg);
+                }
+                100% {
+                    -webkit-transform: rotate(360deg);
+                }
+            }
+            
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+        </style>
     </div>
 
     <div id="menu1" class="tab-pane fade">
-        <form method="post" action="{% url 'web_med:clear_files_nii' patient.id patient.slug %}">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="{{ request.path }}">
-            <button type="submit" class="btn btn-danger pull-right">
-                <span class="glyphicon glyphicon-trash"></span> Clear All Nii Files
-            </button>
-        </form>
 
-        <div class="row">
-            <div class="col-md-3">
-                <div class="panel panel-primary">
-                    <a style="font-size: 1.6rem;" href="{% url 'web_med:drag_and_drop_upload_nii' patient.id patient.slug %}" class="list-group-item{% if request.path == '/web_med/drag-and-drop-upload/' %} active{% endif %}">Drag and Drop Upload</a>
-                </div>
+        <div style="margin-bottom: 20px;">
+            <div class="well text-muted text-center" style="padding-top: 4rem; padding-bottom: 4rem;">
+                <span class="glyphicon glyphicon-arrow-down" style="font-size: 4rem;"></span>
+                <h3>Drop Nii Files Here to Upload</h3>
             </div>
         </div>
-        {% block photos_contentsss_nii %} {% endblock %}
+        <br>
+        <div>
+            <div style="font-size: 2.2rem;display:inline-block">
+                <b><u>Uploaded Files:</u></b>
+            </div>
+            <div style="display:inline-block;" class="pull-right">
+                <form method="post" action="{% url 'web_med:clear_files_nii' pi ps %}" style="display:inline-block;margin-bottom:0px;">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="btn btn-lg btn-danger pull-right">
+                        <span class="glyphicon glyphicon-trash"></span> Clear All Nii Files
+                    </button>
+                </form>
+            </div>
+        </div>
+        <br><br>
+        <table id="gallery_nii" class="table table-bordered">
+            <tbody>
+                {% for nii in niis %}
+                <tr>
+                    <td style="font-size: 2rem">
+                        {{ nii.get_file_name }}
+                    </td>
+                    <td>
+                        <a class="btn btn-warning btn-lg" href="{% url 'web_med:nii-process' pk=pi slug=ps name=nii.get_file_name_withoutExtension %}">
+                            <span>View nii</span>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
     </div>
 
     <div id="menu2" class="tab-pane fade">
-        <form method="post" action="{% url 'web_med:clear_files_vtk' patient.id patient.slug %}">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="{{ request.path }}">
-            <button type="submit" class="btn btn-danger pull-right">
-                <span class="glyphicon glyphicon-trash"></span> Clear All VTK Files
-            </button>
-        </form>
 
-        <div class="row">
-            <div class="col-md-3">
-                <div class="panel panel-primary">
-                    <a style="font-size: 1.6rem;" href="{% url 'web_med:drag_and_drop_upload_vtk' patient.id patient.slug %}" class="list-group-item{% if request.path == '/web_med/drag-and-drop-upload/' %} active{% endif %}">Drag and Drop Upload</a>
-                </div>
+        <div style="margin-bottom: 20px;">
+            <div class="well text-muted text-center" style="padding-top: 4rem; padding-bottom: 4rem;">
+                <span class="glyphicon glyphicon-arrow-down" style="font-size: 4rem;"></span>
+                <h3>Drop VTK Files Here to Upload</h3>
             </div>
         </div>
-        {% block photos_contentsss_vtk %} {% endblock %}
+        <br>
+        <div>
+            <div style="font-size: 2.2rem;display:inline-block">
+                <b><u>Uploaded Files:</u></b>
+            </div>
+            <div style="display:inline-block;" class="pull-right">
+                <form method="post" action="{% url 'web_med:clear_files_vtk' pi ps %}" style="display:inline-block;margin-bottom:0px;">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="btn btn-lg btn-danger pull-right">
+                    <span class="glyphicon glyphicon-trash"></span> Clear All VTK Files
+                </button>
+                </form>
+            </div>
+        </div>
+        <br><br>
+        <table id="gallery_vtk" class="table table-bordered">
+            <tbody>
+                {% for vtk in vtks %}
+                <tr>
+                    <td style="font-size: 2rem">
+                        {{ vtk.get_file_name }}
+                    </td>
+                    <td>
+                        <a class="btn btn-warning btn-lg" href="{% url 'web_med:vtk-process' pk=pi slug=ps name=vtk.get_file_name_withoutExtension %}">
+                            <span>View vtk</span>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
+
+
+<script>
+    $(function() {
+
+        $(".js-upload-photos").click(function() {
+            $("#fileupload").click();
+        });
+
+        $("#fileupload").fileupload({
+            dataType: 'json',
+            sequentialUploads: true,
+
+            start: function(e) {
+                $("#modal-progress").modal("show");
+            },
+
+            stop: function(e) {
+                $("#modal-progress").modal("hide");
+            },
+
+            progressall: function(e, data) {
+                var progress = parseInt(data.loaded / data.total * 100, 10);
+                var strProgress = progress + "%";
+                $(".progress-bar").css({
+                    "width": strProgress
+                });
+                $(".progress-bar").text(strProgress);
+            },
+
+            done: function(e, data) {
+                if (data.result.is_valid) {
+                    var newRow = $(
+                        '<tr>' +
+                        '<td>' + data.result.name + '</td>' +
+                        '</tr>'
+                    );
+                    if (data.result.type = "dcm") {
+                        $("#gallery tbody").append(
+                            newRow
+                        );
+                    } else if (data.result.type = "nii") {
+                        $('table > tbody:nth-of-type(2)').append(
+                            newRow
+                        );
+                    } else if (data.result.type = "vtk") {
+                        $("#gallery_vtk tbody").append(
+                            newRow
+                        );
+                    }
+                }
+            },
+        });
+    });
+</script>
 
 {% endblock %}
