@@ -11,7 +11,7 @@ import mritopng
 import itk
 import vtk
 from vtk.util import numpy_support
-import json as simplejson
+import json
 from django.views import generic
 from django.http import JsonResponse
 from django.template.loader import render_to_string
@@ -104,7 +104,8 @@ def profile_for_users(request):
 #@login_required(login_url='/web_med/login/')
 def patients_list(request):
     patients = Patient.objects.filter(doctor=request.user.id)
-    return render(request, 'web_med/patients.html', {'patients':patients})    
+    return render(request, 'web_med/patients.html', {'patients':patients})   
+
 #@login_required(login_url='/web_med/login/')
 def save_patient_form(request, form, template_name):
     data = dict()
@@ -121,6 +122,7 @@ def save_patient_form(request, form, template_name):
     context = {'form': form}
     data['html_form'] = render_to_string(template_name, context, request=request)
     return JsonResponse(data)
+
 #@login_required(login_url='/web_med/login/')
 def patientadd(request):
     if request.method == 'POST':
@@ -131,6 +133,7 @@ def patientadd(request):
     else:
         form = PatientForm()   
     return save_patient_form(request, form, 'web_med/includes/partial_patient_create.html')
+
 #@login_required(login_url='/web_med/login/')
 def patientupdate(request, *args, **kwargs):
     patient_id = kwargs.get('pk', None)
@@ -140,7 +143,8 @@ def patientupdate(request, *args, **kwargs):
         form = PatientForm(request.POST, instance=patient)
     else:
         form = PatientForm(instance=patient)
-    return save_patient_form(request, form, 'web_med/includes/partial_patient_update.html')    
+    return save_patient_form(request, form, 'web_med/includes/partial_patient_update.html')
+
 #@login_required(login_url='/web_med/login/')
 def patientdelete(request, *args, **kwargs):
     patient_id = kwargs.get('pk', None)
@@ -1532,8 +1536,18 @@ def SliceDrop (request, *args, **kwargs):
 ##### AMI Volume Rendering #####
 
 def l15process(request, *args, **kwargs):
+    patient_id = kwargs.get('pk', None)
+    patient_slug = kwargs.get('slug', None)
+    
+    PathDicom = 'media/dicom/%s/' % (patient_id)    
+    dicom_list = os.listdir(PathDicom)
+    dicom_list = ["/" + PathDicom + s for s in dicom_list]
+    dicom_list = [str(s) for s in dicom_list]
+
     template_name = 'web_med/l15.html'
-    return render(request, template_name)
+    return render(request,template_name,{
+        'dicom_list':dicom_list
+    })
 
 ##### Volume Segmentation #####
 
@@ -1549,7 +1563,7 @@ def VolumeSegmentation (request, *args, **kwargs):
         Name = request.POST.get("Name","")
         stl_name = Name
         PathDicom = 'media/dicom/%s/' % (patient_id)    
-    
+        
     	reader = vtk.vtkDICOMImageReader()
     	reader.SetDirectoryName(PathDicom)
     	reader.Update()
@@ -1560,17 +1574,18 @@ def VolumeSegmentation (request, *args, **kwargs):
     	ConstPixelSpacing = reader.GetPixelSpacing()
 
     	#Thresholding the data: mask out all non-bone tissue from the image, and create a bone-mask
-    	threshold = vtk.vtkImageThreshold ()
+    	threshold = vtk.vtkImageThreshold()
     	threshold.SetInputConnection(reader.GetOutputPort())
+        threshold.ThresholdBetween(float(LowerThreshold),float(UpperThreshold));
         #threshold.ThresholdByLower(400)  # remove all soft tissue
-    	threshold.ThresholdBetween(float(LowerThreshold),float(UpperThreshold));
-
+        #threshold.ThresholdBetween(-600,-400);
+    	
         threshold.ReplaceInOn()
         threshold.SetInValue(0)  # set all values below 400 to 0
         threshold.ReplaceOutOn()
         threshold.SetOutValue(1)  # set all values above 400 to 1
         threshold.Update()
-
+        
         #Surface Extraction: Marching Cubes
         dmc = vtk.vtkDiscreteMarchingCubes()
         dmc.SetInputConnection(threshold.GetOutputPort())

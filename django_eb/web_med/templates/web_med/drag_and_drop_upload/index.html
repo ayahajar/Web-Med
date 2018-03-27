@@ -42,10 +42,12 @@
     <a id="QuadView" href="{% url 'web_med:SliceDrop' pi ps %}">Quad View</a>
 </p>
 <p>
-    <a href="{% url 'web_med:l15-process' pi ps %}">View Rendered Dicom Volume</a>
+    <a href="{% url 'web_med:l15-process' pi ps %}">
+        <button type="button" class="btn btn-success" style="font-size:20px">View Rendered 3D Volume</button>
+    </a>
 </p>
 <p>
-    <button type="button" class="btn btn-primary" id="VolumeSeg" data-toggle="modal" data-target="#VTKSeg">Volume Segmentation</button>
+    <button type="button" class="btn btn-success" style="font-size:20px" id="VolumeSeg" data-toggle="modal" data-target="#VTKSeg">Volume Segmentation</button>
 </p>
 
 <!-- Image loader -->
