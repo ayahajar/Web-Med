@@ -53,7 +53,7 @@ def login_view(request, *args, **kwargs):
             "title" : "Login",
         })
 
-#@login_required(login_url='/web_med/login/')
+@login_required(login_url='/web_med/login/')
 def view_profile(request, pk=None):
     if pk:
         user = User.objects.get(pk=pk)
@@ -62,7 +62,7 @@ def view_profile(request, pk=None):
     args = {'user': user}
     return render(request, 'web_med/profile.html', args)
 
-#@login_required(login_url='/web_med/login/')
+@login_required(login_url='/web_med/login/')
 def edit_profile(request):
     if request.method == 'POST':
         form = EditProfileForm(request.POST, instance=request.user)
@@ -94,19 +94,19 @@ def logout_view(request):
     logout(request)
     return HttpResponseRedirect("/web_med/login")
 
-#@login_required(login_url='/web_med/login/')
+@login_required(login_url='/web_med/login/')
 def profile_for_users(request):
     profile = UserProfile.objects.flter(user=request.user)
     return render (request, 'web_med/patients.html', {'profile' : profile})
 
 
 ############ Patient ############
-#@login_required(login_url='/web_med/login/')
+@login_required(login_url='/web_med/login/')
 def patients_list(request):
     patients = Patient.objects.filter(doctor=request.user.id)
     return render(request, 'web_med/patients.html', {'patients':patients})   
 
-#@login_required(login_url='/web_med/login/')
+@login_required(login_url='/web_med/login/')
 def save_patient_form(request, form, template_name):
     data = dict()
     if request.method == 'POST':
@@ -123,7 +123,7 @@ def save_patient_form(request, form, template_name):
     data['html_form'] = render_to_string(template_name, context, request=request)
     return JsonResponse(data)
 
-#@login_required(login_url='/web_med/login/')
+@login_required(login_url='/web_med/login/')
 def patientadd(request):
     if request.method == 'POST':
         form = PatientForm(request.POST)
@@ -134,7 +134,7 @@ def patientadd(request):
         form = PatientForm()   
     return save_patient_form(request, form, 'web_med/includes/partial_patient_create.html')
 
-#@login_required(login_url='/web_med/login/')
+@login_required(login_url='/web_med/login/')
 def patientupdate(request, *args, **kwargs):
     patient_id = kwargs.get('pk', None)
     patient_slug = kwargs.get('slug', None)
@@ -145,7 +145,7 @@ def patientupdate(request, *args, **kwargs):
         form = PatientForm(instance=patient)
     return save_patient_form(request, form, 'web_med/includes/partial_patient_update.html')
 
-#@login_required(login_url='/web_med/login/')
+@login_required(login_url='/web_med/login/')
 def patientdelete(request, *args, **kwargs):
     patient_id = kwargs.get('pk', None)
     patient_slug = kwargs.get('slug', None)
