@@ -98,6 +98,9 @@ urlpatterns = [
     ##### SliceDrop #####
     url(r'^patients/process/SliceDrop/(?P<pk>[0-9]+)/(?P<slug>[\w-]+)$', views.SliceDrop, name='SliceDrop'),
 
+    ##### QuadView #####
+    url(r'^patients/process/QuadView/(?P<pk>[0-9]+)/(?P<slug>[\w-]+)$', views.QuadView, name='QuadView'),
+
     ##### AMI Volume Rendering #####
     url(r'^patients/process/(?P<pk>[0-9]+)/(?P<slug>[\w-]+)/l15$', views.l15process, name='l15-process'),
 

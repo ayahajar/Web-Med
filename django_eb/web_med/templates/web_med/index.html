@@ -85,8 +85,14 @@
 
             <div class="dropzone">
                 <span>Drop files here or </span>
-                <button style="font-size:15px" id="slicedrop" type="button" class="btn btn-default" onclick="myfunction()">Quad View</button>
-                <br/>
+
+                <input id="filebutton" type="file" multiple onchange="selectfiles(this.files)" style="display: none;"></input>
+                <a class="btn btn-inverse btn-large" style="vertical-align: super;" onclick="javascript:document.getElementById('filebutton').click();">Selectfiles</a><br />
+
+                <span style="font-size: 10px "> Your data stays on your
+					computer. No upload required!</span><br />
+                <br />
+
                 <span style="font-size: 10px ">
                     Your data stays on your computer. No upload required!
                 </span>
@@ -94,17 +100,17 @@
                 <ul class="thumbnails ">
                     <li>
                         <div class="thumbnail ">
-                            <img src="{% static 'web_med/images/gfx/fibers.png' %}" alt=" " /> Fibers<br />(.trk)<br /> <br />
+                            <img src="{% static 'web_med/images/gfx/fibers.png' %} " alt=" " /> Fibers<br />(.trk)<br /> <br />
                         </div>
                     </li>
                     <li>
                         <div class=" thumbnail ">
-                            <img src="{% static 'web_med/images/gfx/dicom.png' %}" alt=" " /> Volumes<br />(.mgh / .mgz / .nrrd / .nii <br />/ .nii.gz / DICOM)
+                            <img src="{% static 'web_med/images/gfx/dicom.png' %} " alt=" " /> Volumes<br />(.mgh / .mgz / .nrrd / .nii <br />/ .nii.gz / DICOM)
                         </div>
                     </li>
                     <li>
                         <div class=" thumbnail ">
-                            <img src="{% static 'web_med/images/gfx/surface.png' %}" alt=" " /> Models<br />(.obj / .vtk / .stl / FreeSurfer)
+                            <img src="{% static 'web_med/images/gfx/surface.png' %} " alt=" " /> Models<br />(.obj / .vtk / .stl / FreeSurfer)
                             <br /> <br />
                         </div>
                     </li>
@@ -190,12 +196,12 @@
                         <a href="#labelmapTab" id="labelmapSwitch" style="margin-left: 50px;"> Labelmap </a > 
                             
                         <div id ="volumeTab" class ="tabContent">
-                        <div id ="modes" style ="width: 130px; float: left;" >
+                        <div id ="modes" style ="width: 130px; float:left;">
                         <div id ="volumerendering" >
-                        <img src="{% static 'web_med/images/gfx/3d.png' %}" />
+                        <img src="{% static 'web_med/images/gfx/3d.png'%}"/>
                     </div>
             <div id ="slicing">
-                <img src="{% static 'web_med/images/gfx/2d.png' %}" />
+                <img src="{% static 'web_med/images/gfx/2d.png' %}"/>
             </div> 
             </div>
 
@@ -341,25 +347,5 @@
 
     </div>
 </body>
-
-<script type="text/javascript" src="{% static 'web_med/js/extra.js' %}"></script>
-<script>
-    function myfunction() {
-
-        $.ajax({
-            url: "{% url 'web_med:progress_bar_upload' pi ps %}",
-            type: "GET",
-            success: function(data) {
-                var fileupload = $(data).find("#fileupload").files;
-                alert(fileupload);
-                selectfiles(fileupload);
-            }
-        });
-
-        //console.log("HERE");
-        //var sliceDrop_files2 = sliceDrop_files;
-        //selectfiles(sliceDrop_files2);
-    }
-</script>
 
 </html>

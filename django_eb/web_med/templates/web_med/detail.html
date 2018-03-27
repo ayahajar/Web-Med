@@ -32,12 +32,17 @@
         </p>
         -->
         <p>
-            <a href="{% url 'web_med:l15-process' pi ps %}">
-                <button type="button" class="btn btn-success" style="font-size:20px">View Rendered 3D Volume</button>
+            <a href="{% url 'web_med:QuadView' pi ps %}">
+                <button type="button" class="btn btn-success" style="font-size:20px;width:300px">Quadratic View</button>
             </a>
         </p>
         <p>
-            <button type="button" class="btn btn-success" style="font-size:20px" id="VolumeSeg" data-toggle="modal" data-target="#VTKSeg">Volume Segmentation &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</button>
+            <a href="{% url 'web_med:l15-process' pi ps %}">
+                <button type="button" class="btn btn-success" style="font-size:20px;width:300px">View Rendered 3D Volume</button>
+            </a>
+        </p>
+        <p>
+            <button type="button" class="btn btn-success" style="font-size:20px;width:300px" id="VolumeSeg" data-toggle="modal" data-target="#VTKSeg">Volume Segmentation &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</button>
         </p>
 
         <!-- Image loader -->

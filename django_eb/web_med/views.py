@@ -1592,6 +1592,16 @@ def SliceDrop (request, *args, **kwargs):
         'ps': patient_slug
     })
 
+def QuadView (request, *args, **kwargs):
+    patient_id = kwargs.get('pk', None)
+    patient_slug = kwargs.get('slug', None)
+ 
+    template_name = 'web_med/QuadView.html'
+    return render(request, template_name, {
+        'pi': patient_id,
+        'ps': patient_slug
+    })
+
 ##### AMI Volume Rendering #####
 
 def l15process(request, *args, **kwargs):
